@@ -2,13 +2,10 @@ import React, { useEffect } from 'react';
 import { useNotificationStore } from '../../store/notificationStore';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { formatDistanceToNow } from 'date-fns';
-import { FaBell, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
+import { FaBell, FaCheck, FaTrash } from 'react-icons/fa';
 
-interface NotificationListProps {
-  onClose?: () => void;
-}
 
-export const NotificationList: React.FC<NotificationListProps> = ({ onClose }) => {
+export const NotificationList: React.FC = () => {
   const {
     notifications,
     isLoading,

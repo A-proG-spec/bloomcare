@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
@@ -14,15 +14,23 @@ import {
   FaShoppingCart, 
   FaStore, 
   FaMapMarkerAlt, 
-  FaPhone, 
   FaStar,
   FaArrowLeft,
-  FaCheck,
-  FaTimes,
-  FaInfoCircle,
-  FaBuilding,
-  FaMoneyBillWave
+  FaInfoCircle
 } from 'react-icons/fa';
+
+// ✅ ADDED: Proper types
+interface Medicine {
+  _id: string;
+  name: string;
+  genericName?: string;
+  category?: string;
+  manufacturer?: string;
+  description?: string;
+  image?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 interface PharmacyAvailability {
   pharmacyId: string;
@@ -36,28 +44,34 @@ interface PharmacyAvailability {
   stockStatus: string;
 }
 
+// ✅ ADDED: API Response type
+interface MedicineApiResponse {
+  data?: {
+    medicine?: Medicine;
+    availableAt?: PharmacyAvailability[];
+  };
+  medicine?: Medicine;
+  availableAt?: PharmacyAvailability[];
+}
+
 export const MedicineDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
-  const { addItem, getItemQuantity } = useCartStore();
+  const { addItem, getItemQuantity, items, clearCart } = useCartStore();
 
-  const [medicine, setMedicine] = useState<any>(null);
+  const [medicine, setMedicine] = useState<Medicine | null>(null);
   const [availableAt, setAvailableAt] = useState<PharmacyAvailability[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPharmacy, setSelectedPharmacy] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      loadMedicine();
-    }
-  }, [id]);
-
-  const loadMedicine = async () => {
+  // ✅ FIXED: Define loadMedicine BEFORE useEffect
+  const loadMedicine = useCallback(async () => {
+    if (!id) return;
     setIsLoading(true);
     try {
-      const response = await medicineApi.getMedicineById(id!);
+      const response = await medicineApi.getMedicineById(id) as MedicineApiResponse;
       const medicineData = response?.data?.medicine || response?.medicine || response;
       const pharmaciesData = response?.data?.availableAt || response?.availableAt || [];
       
@@ -67,16 +81,23 @@ export const MedicineDetails: React.FC = () => {
         return;
       }
       
-      setMedicine(medicineData);
+      setMedicine(medicineData as Medicine);
       setAvailableAt(pharmaciesData);
-    } catch (error: any) {
-      console.error('Load medicine error:', error);
-      toast.error(error.response?.data?.message || 'Failed to load medicine');
+    } catch (error: unknown) {
+      // ✅ FIXED: Removed 'any' type
+      const err = error as { response?: { data?: { message?: string } } };
+      console.error('Load medicine error:', err);
+      toast.error(err.response?.data?.message || 'Failed to load medicine');
       navigate('/medicines');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id, navigate]);
+
+  // ✅ FIXED: useEffect with proper dependency
+  useEffect(() => {
+    loadMedicine();
+  }, [loadMedicine]);
 
   const handleAddToCart = (pharmacyId?: string, pharmacyName?: string, price?: number) => {
     if (!isAuthenticated) {
@@ -85,10 +106,13 @@ export const MedicineDetails: React.FC = () => {
       return;
     }
 
-    if (!pharmacyId || !price) {
+    if (!pharmacyId || !price || !medicine) {
       toast.error('Please select a pharmacy first');
       return;
     }
+
+    const currentPharmacy = items.length > 0 ? items[0].pharmacyId : null;
+    const currentPharmacyName = items.length > 0 ? items[0].pharmacyName : null;
 
     const pharmacy = availableAt.find(p => p.pharmacyId === pharmacyId);
     if (!pharmacy || pharmacy.quantity <= 0) {
@@ -96,12 +120,11 @@ export const MedicineDetails: React.FC = () => {
       return;
     }
 
-    const currentPharmacy = useCartStore.getState().pharmacyId;
     if (currentPharmacy && currentPharmacy !== pharmacyId) {
-      if (!confirm(`Your cart already has items from "${useCartStore.getState().pharmacyName}". Would you like to clear it and add this item?`)) {
+      if (!confirm(`Your cart already has items from "${currentPharmacyName}". Would you like to clear it and add this item?`)) {
         return;
       }
-      useCartStore.getState().clearCart();
+      clearCart();
     }
 
     const success = addItem({
@@ -109,7 +132,7 @@ export const MedicineDetails: React.FC = () => {
       medicineName: medicine.name,
       price: price,
       quantity: 1,
-      image: medicine.image,
+      image: medicine.image || '',
       pharmacyId: pharmacyId,
       pharmacyName: pharmacyName || pharmacy.name,
       stockStatus: pharmacy.stockStatus,

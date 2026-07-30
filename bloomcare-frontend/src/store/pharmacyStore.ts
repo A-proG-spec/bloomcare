@@ -2,6 +2,16 @@ import { create } from 'zustand';
 import type { Pharmacy } from '../types/pharmacy.types';
 import { pharmacyApi } from '../api/endpoints/pharmacy';
 
+// ✅ ADDED: Type for API error
+interface ApiError {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+    };
+  };
+}
+
 interface PharmacyState {
   pharmacies: Pharmacy[];
   selectedPharmacy: Pharmacy | null;
@@ -11,12 +21,12 @@ interface PharmacyState {
 
   fetchPharmacies: (params?: { search?: string; isActive?: boolean }) => Promise<void>;
   fetchNearbyPharmacies: (lat: number, lng: number) => Promise<void>;
-  fetchPharmacy: () => Promise<void>; // ✅ Added
+  fetchPharmacy: () => Promise<void>;
   setSearchQuery: (query: string) => void;
   setSelectedPharmacy: (pharmacy: Pharmacy | null) => void;
 }
 
-export const usePharmacyStore = create<PharmacyState>((set, get) => ({
+export const usePharmacyStore = create<PharmacyState>((set) => ({
   pharmacies: [],
   selectedPharmacy: null,
   pharmacy: null,
@@ -47,14 +57,15 @@ export const usePharmacyStore = create<PharmacyState>((set, get) => ({
     }
   },
 
-  // ✅ Added: Fetch owner's pharmacy
+  // ✅ FIXED: Removed 'any' type
   fetchPharmacy: async () => {
     set({ isLoading: true });
     try {
       const result = await pharmacyApi.getMyPharmacy();
       set({ pharmacy: result });
-    } catch (error: any) {
-      if (error.response?.status !== 404) {
+    } catch (error: unknown) {
+      const err = error as ApiError;
+      if (err.response?.status !== 404) {
         console.error('Failed to fetch pharmacy:', error);
       }
       set({ pharmacy: null });

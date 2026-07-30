@@ -88,7 +88,8 @@ export const ReviewsList: React.FC<ReviewsListProps> = ({
             review={review}
             onDelete={onDelete}
             onUpdate={onUpdate}
-            canDelete={canDeleteAny || (canEditOwn && currentUserId === review.user?._id)}
+            // ✅ FIXED: Use type assertion to access _id
+            canDelete={canDeleteAny || (canEditOwn && currentUserId === (review.user as { _id?: string })?._id)}
             canEdit={canEditOwn}
             currentUserId={currentUserId}
           />

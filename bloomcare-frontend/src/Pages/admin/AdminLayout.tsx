@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { Button } from '../../components/common/Button';
 import { 
   FaHome, 
   FaUsers, 
@@ -12,8 +11,6 @@ import {
   FaSignOutAlt,
   FaBars,
   FaTimes,
-  FaUser,
-  FaCog
 } from 'react-icons/fa';
 
 const navItems = [

@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authApi } from '../../api/endpoints';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useAuthStore } from '../../store/authStore';
-import { FaEnvelope, FaCheck, FaArrowRight, FaSync, FaUserMd } from 'react-icons/fa'; // ✅ Changed FaRefresh to FaSync
+import { FaEnvelope, FaCheck, FaArrowRight, FaSync } from 'react-icons/fa';
+
+// ✅ ADDED: Type for location state
+interface LocationState {
+  email?: string;
+}
 
 export const VerifyEmail: React.FC = () => {
   const [otp, setOtp] = useState('');
@@ -15,8 +20,16 @@ export const VerifyEmail: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // ✅ FIXED: Use ref to prevent double execution and setState in effect warning
+  const hasInitialized = useRef(false);
+
   useEffect(() => {
-    const stateEmail = (location.state as any)?.email;
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
+    const state = location.state as LocationState | null;
+    const stateEmail = state?.email;
+
     if (stateEmail) {
       setEmail(stateEmail);
     } else {
@@ -42,8 +55,9 @@ export const VerifyEmail: React.FC = () => {
         toast.success(response.message || 'Email verified successfully. You can now login.');
         navigate('/login');
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Invalid or expired OTP.';
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err.response?.data?.message || 'Invalid or expired OTP.';
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -56,8 +70,9 @@ export const VerifyEmail: React.FC = () => {
     try {
       await authApi.resendOTP({ email });
       toast.success('New OTP sent to your email.');
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to resend OTP.';
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err.response?.data?.message || 'Failed to resend OTP.';
       toast.error(message);
     } finally {
       setIsResending(false);

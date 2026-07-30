@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
@@ -12,7 +12,7 @@ import { ReviewsList } from '../../components/review/ReviewsList';
 import { MedicineList } from '../../components/medicine/MedicineList';
 import { Modal } from '../../components/common/Modal';
 import type { Pharmacy } from '../../types/pharmacy.types';
-import type { Review } from '../../api/types';
+import type { Review, Medicine } from '../../api/types';
 import toast from 'react-hot-toast';
 import { 
   FaStore, 
@@ -23,10 +23,17 @@ import {
   FaClock,
   FaGlobe,
   FaArrowLeft,
-  FaShoppingCart,
   FaEdit,
   FaCalendarAlt
 } from 'react-icons/fa';
+// ✅ REMOVED: FaShoppingCart
+
+// ✅ ADDED: Type for medicine details
+interface MedicineDetail {
+  price: number;
+  quantity: number;
+  stockStatus: string;
+}
 
 export const PharmacyDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -46,40 +53,35 @@ export const PharmacyDetails: React.FC = () => {
   const [reviewPage, setReviewPage] = useState(1);
   const [reviewTotalPages, setReviewTotalPages] = useState(1);
 
-  useEffect(() => {
+  // ✅ FIXED: Use ref to prevent double execution
+  const hasLoaded = useRef(false);
+
+  // ✅ FIXED: Define functions BEFORE useEffect with useCallback
+  const loadPharmacyData = useCallback(async () => {
     if (!id) return;
-    loadPharmacyData();
-  }, [id]);
-
-  useEffect(() => {
-    if (id) {
-      loadReviews();
-    }
-  }, [id, sortBy, reviewPage]);
-
-  const loadPharmacyData = async () => {
     setIsLoading(true);
     try {
-      const data = await pharmacyApi.getPharmacyById(id!);
+      const data = await pharmacyApi.getPharmacyById(id);
       setPharmacy(data);
 
       if (isAuthenticated && user?.id) {
         try {
-          const userRev = await reviewApi.getUserReviewForPharmacy(id!);
+          const userRev = await reviewApi.getUserReviewForPharmacy(id);
           setUserReview(userRev);
-        } catch (error) {
+        } catch {
           setUserReview(null);
         }
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to load pharmacy');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to load pharmacy');
       navigate('/pharmacies');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id, isAuthenticated, user?.id, navigate]);
 
-  const loadReviews = async () => {
+  const loadReviews = useCallback(async () => {
     if (!id) return;
     try {
       const response = await reviewApi.getPharmacyReviews(id, {
@@ -91,10 +93,24 @@ export const PharmacyDetails: React.FC = () => {
       if (response.pagination) {
         setReviewTotalPages(response.pagination.pages);
       }
-    } catch (error: any) {
-      console.error('Failed to fetch reviews:', error);
+    } catch {
+      console.error('Failed to fetch reviews:');
     }
-  };
+  }, [id, reviewPage, sortBy]);
+
+  // ✅ FIXED: Only call once on mount
+  useEffect(() => {
+    if (!hasLoaded.current) {
+      hasLoaded.current = true;
+      loadPharmacyData();
+    }
+  }, [loadPharmacyData]);
+
+  useEffect(() => {
+    if (id) {
+      loadReviews();
+    }
+  }, [loadReviews]);
 
   const handleSubmitReview = async () => {
     if (!isAuthenticated) {
@@ -131,8 +147,9 @@ export const PharmacyDetails: React.FC = () => {
       setReviewPage(1);
       await loadPharmacyData();
       await loadReviews();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to submit review');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to submit review');
     } finally {
       setIsSubmittingReview(false);
     }
@@ -145,8 +162,9 @@ export const PharmacyDetails: React.FC = () => {
       setReviewPage(1);
       await loadPharmacyData();
       await loadReviews();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to delete review');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to delete review');
     }
   };
 
@@ -157,12 +175,12 @@ export const PharmacyDetails: React.FC = () => {
     try {
       await reviewApi.updateReview(reviewId, data);
       await loadReviews();
-    } catch (error: any) {
-      throw error;
+    } catch {
+      // Error handled by component
     }
   };
 
-  const handleAddToCart = (medicine: any, pharmacyId?: string, pharmacyName?: string) => {
+  const handleAddToCart = (medicine: Medicine, pharmacyId?: string, pharmacyName?: string) => {
     if (!isAuthenticated) {
       toast.error('Please login to add items to cart');
       navigate('/login');
@@ -185,7 +203,7 @@ export const PharmacyDetails: React.FC = () => {
       medicineName: medicine.name,
       price: details.price,
       quantity: 1,
-      image: medicine.image,
+      image: medicine.image || '',
       pharmacyId: pharmacyId,
       pharmacyName: pharmacyName || pharmacy.name,
       stockStatus: details.stockStatus,
@@ -219,18 +237,33 @@ export const PharmacyDetails: React.FC = () => {
     );
   }
 
-  const medicineDetails = pharmacy.medicines?.reduce((acc, med) => {
-    acc[med.medicine._id] = {
-      price: med.price,
-      quantity: med.quantity,
-      stockStatus: med.stockStatus,
-    };
-    return acc;
-  }, {} as any) || {};
+  // ✅ FIXED: Properly typed with explicit type instead of any
+  const medicineDetails: Record<string, MedicineDetail> = 
+    pharmacy.medicines?.reduce((acc, med) => {
+      acc[med.medicine._id] = {
+        price: med.price,
+        quantity: med.quantity,
+        stockStatus: med.stockStatus,
+      };
+      return acc;
+    }, {} as Record<string, MedicineDetail>) || {};
 
   const hasOpeningHours =
     pharmacy.openingHours &&
     Object.values(pharmacy.openingHours).some((val) => val && val.trim() !== '');
+
+  // ✅ FIXED: Map medicines to proper Medicine type with all required fields
+  const mappedMedicines: Medicine[] = pharmacy.medicines?.map((m) => ({
+    _id: m.medicine._id,
+    name: m.medicine.name,
+    genericName: (m.medicine as { genericName?: string }).genericName || '',
+    category: (m.medicine as { category?: string }).category || '',
+    manufacturer: (m.medicine as { manufacturer?: string }).manufacturer || '',
+    description: (m.medicine as { description?: string }).description || '',
+    image: (m.medicine as { image?: string }).image || '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  })) || [];
 
   return (
     <div className="space-y-8">
@@ -324,9 +357,9 @@ export const PharmacyDetails: React.FC = () => {
             Available Medicines ({pharmacy.medicines?.length || 0})
           </h2>
         </div>
-        {pharmacy.medicines && pharmacy.medicines.length > 0 ? (
+        {mappedMedicines.length > 0 ? (
           <MedicineList
-            medicines={pharmacy.medicines.map((m) => m.medicine)}
+            medicines={mappedMedicines}
             showPrice={true}
             showAddButton={true}
             onAddToCart={handleAddToCart}

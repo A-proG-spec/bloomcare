@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
@@ -22,12 +22,11 @@ import {
   FaPhone,
   FaMapMarkerAlt,
   FaHome,
-  FaCheckCircle,
   FaSpinner
 } from 'react-icons/fa';
 
-// Initialize Stripe with your publishable key
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+// ✅ FIXED: Use import.meta.env with proper Vite type
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string);
 
 // ============================================================
 // STRIPE PAYMENT FORM COMPONENT
@@ -44,8 +43,13 @@ const StripePaymentForm: React.FC<{
   const [isReady, setIsReady] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
+  // ✅ FIXED: Use ref to prevent double execution and setState warning
+  const hasInitialized = useRef(false);
+
   useEffect(() => {
+    if (hasInitialized.current) return;
     if (stripe && elements) {
+      hasInitialized.current = true;
       setIsReady(true);
       console.log('✅ Stripe is ready');
     }
@@ -63,7 +67,6 @@ const StripePaymentForm: React.FC<{
     setIsLoading(true);
 
     try {
-      // Submit the payment form
       const { error: submitError } = await elements.submit();
       if (submitError) {
         setPaymentError(submitError.message || 'Payment submission failed');
@@ -72,7 +75,6 @@ const StripePaymentForm: React.FC<{
         return;
       }
 
-      // Confirm the payment
       const { error: confirmError } = await stripe.confirmPayment({
         elements,
         clientSecret,
@@ -89,19 +91,20 @@ const StripePaymentForm: React.FC<{
         return;
       }
 
-      // Payment succeeded - verify with backend
       try {
         const paymentIntentId = clientSecret.split('_secret_')[0];
         await paymentApi.verifyPayment(paymentIntentId, orderId);
         toast.success('Payment successful!');
         onSuccess();
-      } catch (verifyError: any) {
-        console.error('Verification error:', verifyError);
+      } catch (verifyError: unknown) {
+        const err = verifyError as { message?: string };
+        console.error('Verification error:', err);
         toast.error('Payment succeeded but verification failed. Please contact support.');
-        onError(verifyError.message || 'Verification failed');
+        onError(err.message || 'Verification failed');
       }
-    } catch (error: any) {
-      const msg = error.message || 'An unexpected error occurred';
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      const msg = err.message || 'An unexpected error occurred';
       setPaymentError(msg);
       onError(msg);
     } finally {
@@ -164,7 +167,7 @@ const StripePaymentForm: React.FC<{
 export const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const { createOrder } = useOrderStore();
   const { items, getItemsByPharmacy, getTotalPrice, getTotalItems, clearCart } = useCartStore();
 
@@ -178,18 +181,8 @@ export const Checkout: React.FC = () => {
   const [deliveryPhone, setDeliveryPhone] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup');
 
-  // Handle payment verification on redirect from Stripe
-  useEffect(() => {
-    const paymentIntentId = searchParams.get('payment_intent');
-    const redirectStatus = searchParams.get('redirect_status');
-    const orderIdParam = searchParams.get('orderId');
-
-    if (paymentIntentId && redirectStatus === 'succeeded' && orderIdParam) {
-      verifyPayment(paymentIntentId, orderIdParam);
-    }
-  }, [searchParams]);
-
-  const verifyPayment = async (paymentIntentId: string, orderIdParam: string) => {
+  // ✅ FIXED: Define verifyPayment BEFORE useEffect
+  const verifyPayment = useCallback(async (paymentIntentId: string, orderIdParam: string) => {
     setIsLoading(true);
     try {
       const result = await paymentApi.verifyPayment(paymentIntentId, orderIdParam);
@@ -200,13 +193,25 @@ export const Checkout: React.FC = () => {
         toast.error('Payment verification failed. Please try again.');
         navigate('/cart');
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Payment verification failed');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Payment verification failed');
       navigate('/cart');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [navigate]);
+
+  // ✅ FIXED: useEffect with proper dependency
+  useEffect(() => {
+    const paymentIntentId = searchParams.get('payment_intent');
+    const redirectStatus = searchParams.get('redirect_status');
+    const orderIdParam = searchParams.get('orderId');
+
+    if (paymentIntentId && redirectStatus === 'succeeded' && orderIdParam) {
+      verifyPayment(paymentIntentId, orderIdParam);
+    }
+  }, [searchParams, verifyPayment]);
 
   // Redirect if not authenticated or cart empty
   if (!isAuthenticated) {
@@ -222,58 +227,59 @@ export const Checkout: React.FC = () => {
   const groupedItems = getItemsByPharmacy();
   const pharmacyIds = Object.keys(groupedItems);
 
-const handlePlaceOrder = async () => {
-  if (deliveryMethod === 'delivery' && !deliveryAddress.trim()) {
-    toast.error('Please enter your delivery address');
-    return;
-  }
+  const handlePlaceOrder = async () => {
+    if (deliveryMethod === 'delivery' && !deliveryAddress.trim()) {
+      toast.error('Please enter your delivery address');
+      return;
+    }
 
-  if (deliveryMethod === 'delivery' && !deliveryPhone.trim()) {
-    toast.error('Please enter your phone number for delivery');
-    return;
-  }
+    if (deliveryMethod === 'delivery' && !deliveryPhone.trim()) {
+      toast.error('Please enter your phone number for delivery');
+      return;
+    }
 
-  setIsSubmitting(true);
-  try {
-    const orderPromises = pharmacyIds.map(async (pharmacyId) => {
-      const pharmacyItems = groupedItems[pharmacyId].items;
-      return createOrder(
-        pharmacyId,
-        pharmacyItems.map(item => ({
-          medicineId: item.medicineId,
-          quantity: item.quantity,
-        })),
-        paymentMethod // ✅ Pass payment method
-      );
-    });
-
-    const orders = await Promise.all(orderPromises);
-
-    if (paymentMethod === 'cod') {
-      clearCart();
-      toast.success('Order placed successfully!');
-      if (orders.length === 1) {
-        navigate(`/orders/${orders[0]._id}`);
-      } else {
-        navigate('/orders');
-      }
-      setIsSubmitting(false);
-    } else {
-      const firstOrder = orders[0];
-      const paymentResult = await paymentApi.initializePayment({
-        orderId: firstOrder._id,
-        paymentMethod: 'card',
+    setIsSubmitting(true);
+    try {
+      const orderPromises = pharmacyIds.map(async (pharmacyId) => {
+        const pharmacyItems = groupedItems[pharmacyId].items;
+        return createOrder(
+          pharmacyId,
+          pharmacyItems.map(item => ({
+            medicineId: item.medicineId,
+            quantity: item.quantity,
+          })),
+          paymentMethod
+        );
       });
 
-      setClientSecret(paymentResult.clientSecret);
-      setOrderId(firstOrder._id);
+      const orders = await Promise.all(orderPromises);
+
+      if (paymentMethod === 'cod') {
+        clearCart();
+        toast.success('Order placed successfully!');
+        if (orders.length === 1) {
+          navigate(`/orders/${orders[0]._id}`);
+        } else {
+          navigate('/orders');
+        }
+        setIsSubmitting(false);
+      } else {
+        const firstOrder = orders[0];
+        const paymentResult = await paymentApi.initializePayment({
+          orderId: firstOrder._id,
+          paymentMethod: 'card',
+        });
+
+        setClientSecret(paymentResult.clientSecret);
+        setOrderId(firstOrder._id);
+        setIsSubmitting(false);
+      }
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to place order');
       setIsSubmitting(false);
     }
-  } catch (error: any) {
-    toast.error(error.response?.data?.message || 'Failed to place order');
-    setIsSubmitting(false);
-  }
-};
+  };
 
   // Show loading state
   if (isLoading) {
@@ -338,14 +344,12 @@ const handlePlaceOrder = async () => {
               clientSecret={clientSecret}
               orderId={orderId}
               onSuccess={() => {
-                // ✅ Clear cart only after successful payment
                 clearCart();
                 toast.success('Payment successful!');
                 navigate(`/orders/${orderId}`);
               }}
               onError={(error) => {
                 toast.error(error || 'Payment failed. Please try again.');
-                // Don't clear cart on error - user can retry
                 setClientSecret(null);
                 setOrderId(null);
               }}

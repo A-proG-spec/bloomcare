@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pharmacyApi } from '../../api/endpoints/pharmacy';
 import { Input } from '../../components/common/Input';
@@ -6,22 +6,38 @@ import { Button } from '../../components/common/Button';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { 
-  FaStore, 
   FaEdit, 
   FaSave, 
   FaArrowLeft, 
-  FaMapMarkerAlt, 
-  FaPhone, 
-  FaEnvelope, 
-  FaGlobe, 
   FaClock,
   FaCamera,
   FaTimes,
-  FaCheck,
   FaPowerOff
 } from 'react-icons/fa';
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+// ✅ ADDED: Proper types
+interface PharmacyData {
+  name: string;
+  address: string;
+  latitude: string;
+  longitude: string;
+  phone: string;
+  email: string;
+  website: string;
+  isActive: boolean;
+  image: string;
+  openingHours: {
+    monday: string;
+    tuesday: string;
+    wednesday: string;
+    thursday: string;
+    friday: string;
+    saturday: string;
+    sunday: string;
+  };
+}
 
 export const EditPharmacy: React.FC = () => {
   const navigate = useNavigate();
@@ -30,7 +46,7 @@ export const EditPharmacy: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PharmacyData>({
     name: '',
     address: '',
     latitude: '',
@@ -39,6 +55,7 @@ export const EditPharmacy: React.FC = () => {
     email: '',
     website: '',
     isActive: true,
+    image: '',
     openingHours: {
       monday: '',
       tuesday: '',
@@ -50,11 +67,11 @@ export const EditPharmacy: React.FC = () => {
     },
   });
 
-  useEffect(() => {
-    loadPharmacy();
-  }, []);
+  // ✅ FIXED: Use ref to prevent double execution
+  const hasLoaded = useRef(false);
 
-  const loadPharmacy = async () => {
+  // ✅ FIXED: Define loadPharmacy BEFORE useEffect with useCallback
+  const loadPharmacy = useCallback(async () => {
     try {
       const data = await pharmacyApi.getMyPharmacy();
       setFormData({
@@ -66,6 +83,7 @@ export const EditPharmacy: React.FC = () => {
         email: data.email || '',
         website: data.website || '',
         isActive: data.isActive ?? true,
+        image: data.image || '',
         openingHours: {
           monday: data.openingHours?.monday || '',
           tuesday: data.openingHours?.tuesday || '',
@@ -76,8 +94,10 @@ export const EditPharmacy: React.FC = () => {
           sunday: data.openingHours?.sunday || '',
         },
       });
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      // ✅ FIXED: Removed 'any' type
+      const err = error as { response?: { status?: number } };
+      if (err.response?.status === 404) {
         navigate('/apply-pharmacy');
         toast.error('You need to apply for a pharmacy first');
       } else {
@@ -87,7 +107,15 @@ export const EditPharmacy: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [navigate]);
+
+  // ✅ FIXED: Only call once on mount
+  useEffect(() => {
+    if (!hasLoaded.current) {
+      hasLoaded.current = true;
+      loadPharmacy();
+    }
+  }, [loadPharmacy]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -121,6 +149,7 @@ export const EditPharmacy: React.FC = () => {
     setImagePreview(null);
   };
 
+  // ✅ FIXED: Removed 'any' type
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -128,7 +157,17 @@ export const EditPharmacy: React.FC = () => {
     try {
       const { name, address, latitude, longitude, phone, email, website, isActive, openingHours } = formData;
 
-      const updateData: any = {
+      const updateData: {
+        name: string;
+        address: string;
+        latitude: number;
+        longitude: number;
+        phone: string;
+        email: string;
+        website?: string;
+        isActive: boolean;
+        openingHours?: Record<string, string>;
+      } = {
         name,
         address,
         latitude: parseFloat(latitude),
@@ -148,8 +187,10 @@ export const EditPharmacy: React.FC = () => {
 
       toast.success('Pharmacy updated successfully');
       navigate('/my-pharmacy');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update pharmacy');
+    } catch (error: unknown) {
+      // ✅ FIXED: Removed 'any' type
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to update pharmacy');
     } finally {
       setIsSubmitting(false);
     }

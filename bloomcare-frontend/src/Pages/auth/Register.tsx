@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { authApi } from '../../api/endpoints';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
-import { FaUser, FaEnvelope, FaLock, FaPhone, FaCamera, FaArrowRight, FaUserMd, FaCheck } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaPhone, FaCamera, FaArrowRight, FaUserMd } from 'react-icons/fa';
 
 const registerSchema = z.object({
     fullName: z.string().min(2, 'Full name is required'),
@@ -53,8 +53,9 @@ export const Register: React.FC = () => {
             });
             toast.success(response.message || 'Registration successful! Please verify your email.');
             navigate('/verify-email', { state: { email: data.email } });
-        } catch (error: any) {
-            const message = error.response?.data?.message || 'Registration failed. Please try again.';
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
+            const message = err.response?.data?.message || 'Registration failed. Please try again.';
             toast.error(message);
         } finally {
             setIsLoading(false);

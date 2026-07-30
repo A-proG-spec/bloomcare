@@ -2,12 +2,14 @@ import apiClient from '../client';
 
 export const orderApi = {
   // Create order
+  // ✅ FIX: Add paymentMethod to the parameter type
   createOrder: async (data: {
     pharmacyId: string;
     items: Array<{ medicineId: string; quantity: number }>;
+    paymentMethod?: 'cod' | 'online';  // ✅ ADD THIS
   }) => {
     const response = await apiClient.post('/orders', data);
-    return response.data.data; // returns the order
+    return response.data.data;
   },
 
   // Get user's orders (with filters)
@@ -17,7 +19,7 @@ export const orderApi = {
     limit?: number;
   }) => {
     const response = await apiClient.get('/orders/my-orders', { params });
-    return response.data.data; // { orders, pagination }
+    return response.data.data;
   },
 
   // Get order details

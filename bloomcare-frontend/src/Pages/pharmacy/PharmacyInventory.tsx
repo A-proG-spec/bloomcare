@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePharmacyStore } from '../../store/pharmacyStore';
 import { medicineApi } from '../../api/endpoints/medicine';
@@ -18,8 +18,8 @@ import {
   FaStore,
   FaArrowLeft,
   FaInfoCircle,
-  FaFilter,
-  FaExclamationTriangle
+  // ✅ REMOVED: FaFilter,
+  // ✅ REMOVED: FaExclamationTriangle
 } from 'react-icons/fa';
 
 interface MedicineInventory {
@@ -33,6 +33,13 @@ interface MedicineInventory {
   price: number;
   quantity: number;
   stockStatus: 'In Stock' | 'Low Stock' | 'Out of Stock';
+}
+
+interface AvailableMedicine {
+  _id: string;
+  name: string;
+  category: string;
+  manufacturer: string;
 }
 
 export const PharmacyInventory: React.FC = () => {
@@ -67,14 +74,13 @@ export const PharmacyInventory: React.FC = () => {
     quantity: '',
   });
 
-  const [availableMedicines, setAvailableMedicines] = useState<any[]>([]);
+  const [availableMedicines, setAvailableMedicines] = useState<AvailableMedicine[]>([]);
   const [isLoadingMedicines, setIsLoadingMedicines] = useState(false);
 
-  useEffect(() => {
-    loadPharmacyAndInventory();
-  }, []);
+  // ✅ FIXED: Use ref to prevent double execution
+  const hasLoaded = useRef(false);
 
-  const loadPharmacyAndInventory = async () => {
+  const loadPharmacyAndInventory = useCallback(async () => {
     setIsLoading(true);
     try {
       await fetchPharmacy();
@@ -87,9 +93,9 @@ export const PharmacyInventory: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchPharmacy, pharmacy?._id]);
 
-  const loadInventory = async (pharmacyId: string) => {
+  const loadInventory = useCallback(async (pharmacyId: string) => {
     try {
       const result = await medicineApi.getPharmacyMedicines(pharmacyId, {
         search: search || undefined,
@@ -100,13 +106,21 @@ export const PharmacyInventory: React.FC = () => {
       console.error('Failed to load inventory:', error);
       toast.error('Failed to load inventory');
     }
-  };
+  }, [search, inStockOnly]);
+
+  // ✅ FIXED: Only call once on mount
+  useEffect(() => {
+    if (!hasLoaded.current) {
+      hasLoaded.current = true;
+      loadPharmacyAndInventory();
+    }
+  }, [loadPharmacyAndInventory]);
 
   useEffect(() => {
     if (pharmacy?._id) {
       loadInventory(pharmacy._id);
     }
-  }, [search, inStockOnly]);
+  }, [search, inStockOnly, pharmacy?._id, loadInventory]);
 
   const handleAddMedicine = async () => {
     if (!formData.medicineId || !formData.price || !formData.quantity) {
@@ -131,8 +145,9 @@ export const PharmacyInventory: React.FC = () => {
       setIsAddModalOpen(false);
       resetForm();
       await loadInventory(pharmacy._id);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to add medicine');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to add medicine');
     } finally {
       setIsSubmitting(false);
     }
@@ -173,8 +188,9 @@ export const PharmacyInventory: React.FC = () => {
       setIsCreateModalOpen(false);
       resetNewMedicineForm();
       await loadInventory(pharmacy._id);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create and add medicine');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to create and add medicine');
     } finally {
       setIsSubmitting(false);
     }
@@ -203,8 +219,9 @@ export const PharmacyInventory: React.FC = () => {
       setIsEditModalOpen(false);
       resetForm();
       await loadInventory(pharmacy._id);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update stock');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to update stock');
     } finally {
       setIsSubmitting(false);
     }
@@ -224,8 +241,9 @@ export const PharmacyInventory: React.FC = () => {
       await medicineApi.removeMedicineFromPharmacy(pharmacy._id, medicineId);
       toast.success('Medicine removed from inventory');
       await loadInventory(pharmacy._id);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to remove medicine');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to remove medicine');
     }
   };
 

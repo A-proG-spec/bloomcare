@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // ✅ ADD THIS IMPORT
 import { useOrderStore } from '../../store/orderStore';
 import { OrderCard } from '../../components/order/OrderCard';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
@@ -6,6 +7,7 @@ import { Button } from '../../components/common/Button';
 import { FaBox, FaFilter, FaShoppingBag } from 'react-icons/fa';
 
 export const Orders: React.FC = () => {
+  const navigate = useNavigate(); // ✅ ADD THIS LINE
   const { orders, isLoading, fetchUserOrders } = useOrderStore();
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);

@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import type { Medicine } from '../../api/types';
 import { Badge } from '../common/Badge';
 import { useCartStore } from '../../store/cartStore';
-import { FaShoppingCart, FaPills, FaPlus, FaCheck } from 'react-icons/fa';
+import { FaShoppingCart, FaPlus } from 'react-icons/fa';
+// ✅ REMOVED: FaPills, FaCheck
 
 interface MedicineCardProps {
   medicine: Medicine;

@@ -24,7 +24,7 @@ interface MedicineState {
   setSelectedMedicine: (medicine: Medicine | null) => void;
 }
 
-export const useMedicineStore = create<MedicineState>((set, get) => ({
+export const useMedicineStore = create<MedicineState>((set) => ({
   medicines: [],
   selectedMedicine: null,
   isLoading: false,
@@ -35,7 +35,6 @@ export const useMedicineStore = create<MedicineState>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await medicineApi.getMedicines(params);
-      // Safely extract medicines array
       let medicines: Medicine[] = [];
       if (response?.data?.medicines) {
         medicines = response.data.medicines;

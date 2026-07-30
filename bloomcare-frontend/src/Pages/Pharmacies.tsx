@@ -6,7 +6,8 @@ import { PharmacySearchBar } from '../components/pharmacy/PharmacySearchBar';
 import { PharmacyMap } from '../components/pharmacy/PharmacyMap';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import type { Pharmacy } from '../types/pharmacy.types';
-import { MapContainer } from 'react-leaflet';
+import type { Map as LeafletMap } from 'leaflet';
+// ✅ REMOVED: import { MapContainer } from 'react-leaflet';
 
 export const Pharmacies: React.FC = () => {
   const {
@@ -19,17 +20,16 @@ export const Pharmacies: React.FC = () => {
   const { isSearchOpen, closeSearch, openSearch } = useUIStore();
 
   const [mapCenter, setMapCenter] = useState({ lat: 9.0222, lng: 38.7468 });
-  const [searchQuery, setSearchQuery] = useState('');
+  // ✅ REMOVED: const [searchQuery, setSearchQuery] = useState('');
   const [selectedPharmacy, setSelectedPharmacy] = useState<Pharmacy | null>(null);
   const [isListOpen, setIsListOpen] = useState(false);
-  const mapRef = useRef<MapContainer>(null);
+const mapRef = useRef<LeafletMap | null>(null);
 
   useEffect(() => {
     fetchPharmacies({ isActive: true });
   }, [fetchPharmacies]);
 
   const handleSearch = (query: string) => {
-    setSearchQuery(query);
     fetchPharmacies({ search: query, isActive: true });
     closeSearch();
   };
@@ -77,7 +77,7 @@ export const Pharmacies: React.FC = () => {
     if (pharmacy.latitude && pharmacy.longitude) {
       setMapCenter({ lat: pharmacy.latitude, lng: pharmacy.longitude });
       setSelectedPharmacy(pharmacy);
-      setIsListOpen(false); // close the list after selection
+      setIsListOpen(false);
     }
   };
 
@@ -140,17 +140,14 @@ export const Pharmacies: React.FC = () => {
         </button>
       </div>
 
-      {/* 4. Pharmacy List Overlay – now styled consistently with the search modal */}
+      {/* 4. Pharmacy List Overlay */}
       {isListOpen && (
         <>
-          {/* Backdrop with blur */}
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm z-30"
             onClick={() => setIsListOpen(false)}
           />
-          {/* Slide‑up panel */}
           <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md rounded-t-3xl shadow-2xl z-40 max-h-[80vh] flex flex-col">
-            {/* Header with close button */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <h2 className="text-xl font-bold text-black">
                 Pharmacies ({pharmacies.length})
@@ -162,7 +159,6 @@ export const Pharmacies: React.FC = () => {
                 ×
               </button>
             </div>
-            {/* List content */}
             <div className="flex-1 overflow-y-auto px-4 pb-4 pt-2">
               {isLoading ? (
                 <div className="flex justify-center py-12">
@@ -191,7 +187,7 @@ export const Pharmacies: React.FC = () => {
         </>
       )}
 
-      {/* 5. Mobile Search Modal (unchanged, already styled) */}
+      {/* 5. Mobile Search Modal */}
       {isSearchOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 pt-20 md:hidden">
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-4 w-full max-w-md">

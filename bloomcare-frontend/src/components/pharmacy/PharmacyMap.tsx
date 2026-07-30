@@ -1,18 +1,21 @@
 import React, { useState, forwardRef, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
-import { Icon, LatLngExpression } from 'leaflet';
+import type { LatLngExpression, Map as LeafletMap } from 'leaflet';
 import type { Pharmacy } from '../../types/pharmacy.types';
 import { useNavigate } from 'react-router-dom';
 import { FaMapMarkerAlt, FaStore, FaStar, FaArrowRight } from 'react-icons/fa';
 
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import L from 'leaflet';
 
-const defaultIcon = new Icon({
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
+// ✅ FIXED: Create default icon using Leaflet's built-in icon
+const defaultIcon = new L.Icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
 });
 
 interface PharmacyMapProps {
@@ -23,10 +26,12 @@ interface PharmacyMapProps {
   selectedPharmacy?: Pharmacy | null;
 }
 
-const MapClickHandler: React.FC<{
+interface MapClickHandlerProps {
   setClickedPos: (pos: LatLngExpression | null) => void;
   setClickedLatLng: (latlng: { lat: number; lng: number } | null) => void;
-}> = ({ setClickedPos, setClickedLatLng }) => {
+}
+
+const MapClickHandler: React.FC<MapClickHandlerProps> = ({ setClickedPos, setClickedLatLng }) => {
   useMapEvents({
     click: (e) => {
       const { lat, lng } = e.latlng;
@@ -37,7 +42,8 @@ const MapClickHandler: React.FC<{
   return null;
 };
 
-export const PharmacyMap = forwardRef<MapContainer, PharmacyMapProps>(({
+// ✅ FIXED: Use proper LeafletMap type instead of any
+export const PharmacyMap = forwardRef<LeafletMap | null, PharmacyMapProps>(({
   pharmacies,
   center = { lat: 9.0222, lng: 38.7468 },
   zoom = 13,
@@ -47,7 +53,8 @@ export const PharmacyMap = forwardRef<MapContainer, PharmacyMapProps>(({
   const navigate = useNavigate();
   const [clickedPos, setClickedPos] = useState<LatLngExpression | null>(null);
   const [clickedLatLng, setClickedLatLng] = useState<{ lat: number; lng: number } | null>(null);
-  const [map, setMap] = useState<MapContainer | null>(null);
+  // ✅ FIXED: Use proper LeafletMap type instead of any
+  const [map, setMap] = useState<LeafletMap | null>(null);
 
   useEffect(() => {
     if (selectedPharmacy && map) {
@@ -76,10 +83,13 @@ export const PharmacyMap = forwardRef<MapContainer, PharmacyMapProps>(({
         style={{ height: '100%', width: '100%' }}
         className="z-0 rounded-xl"
         zoomControl={false}
-        ref={(mapInstance) => {
+        ref={(mapInstance: LeafletMap | null) => {
           setMap(mapInstance);
-          if (typeof ref === 'function') ref(mapInstance);
-          else if (ref) ref.current = mapInstance;
+          if (typeof ref === 'function') {
+            ref(mapInstance);
+          } else if (ref) {
+            ref.current = mapInstance;
+          }
         }}
       >
         <TileLayer

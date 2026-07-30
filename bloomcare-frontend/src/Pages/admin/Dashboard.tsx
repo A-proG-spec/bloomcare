@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { adminApi } from '../../api/endpoints/admin';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { formatCurrency } from '../../utils/formatters';
@@ -13,10 +13,32 @@ import {
   FaMoneyBillWave,
   FaArrowRight,
   FaUser,
-  FaEnvelope,
-  FaPhone
 } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+
+// ✅ ADDED: Proper types for Dashboard data
+interface Order {
+  _id: string;
+  totalPrice: number;
+  status: string;
+  user?: { fullName: string };
+  pharmacy?: { name: string };
+}
+
+interface User {
+  _id: string;
+  fullName: string;
+  email: string;
+  image?: string;
+  role: string;
+}
+
+interface Application {
+  _id: string;
+  pharmacyName: string;
+  status: string;
+  user?: { fullName: string };
+}
 
 interface DashboardStats {
   stats: {
@@ -30,21 +52,20 @@ interface DashboardStats {
     totalRevenue: number;
   };
   recent: {
-    orders: any[];
-    users: any[];
-    applications: any[];
+    orders: Order[];
+    users: User[];
+    applications: Application[];
   };
 }
 
 export const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // ✅ FIXED: Use ref to prevent double execution
+  const hasLoaded = useRef(false);
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
-
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     try {
       const data = await adminApi.getDashboardStats();
       setStats(data);
@@ -53,7 +74,15 @@ export const Dashboard: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // ✅ FIXED: Only call once on mount
+  useEffect(() => {
+    if (!hasLoaded.current) {
+      hasLoaded.current = true;
+      loadDashboard();
+    }
+  }, [loadDashboard]);
 
   if (isLoading) {
     return (
@@ -130,7 +159,7 @@ export const Dashboard: React.FC = () => {
                 <div key={order._id} className="flex justify-between items-center pb-2 border-b border-gray-200 last:border-0">
                   <div>
                     <p className="text-sm font-medium text-black font-outfit">
-                      #{order._id.slice(-6)} - {order.user?.fullName}
+                      #{order._id.slice(-6)} - {order.user?.fullName || 'Unknown'}
                     </p>
                     <p className="text-xs text-gray-500 font-outfit">
                       {order.pharmacy?.name || 'Unknown pharmacy'}
@@ -218,7 +247,7 @@ export const Dashboard: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-black font-outfit">{app.pharmacyName}</p>
-                    <p className="text-xs text-gray-500 font-outfit">{app.user?.fullName}</p>
+                    <p className="text-xs text-gray-500 font-outfit">{app.user?.fullName || 'Unknown'}</p>
                   </div>
                 </div>
                 <span className="text-xs px-2 py-0.5 rounded-xl bg-yellow-100 text-yellow-700 font-medium font-outfit">

@@ -17,7 +17,7 @@ import {
   FaStore, 
   FaPills, 
   FaUserMd,
-  FaHome
+  // ✅ REMOVED: FaHome
 } from 'react-icons/fa';
 
 export const Navbar: React.FC = () => {
@@ -140,7 +140,6 @@ export const Navbar: React.FC = () => {
                 </Button>
               </>
             ) : (
-              // ✅ Show Login/Register ONLY when not authenticated
               <>
                 <Link to="/login" className="hidden sm:inline">
                   <Button variant="outline" size="sm">Login</Button>
@@ -200,7 +199,6 @@ export const Navbar: React.FC = () => {
                 </button>
               </>
             ) : (
-              // ✅ Mobile: Show Login/Register ONLY when not authenticated
               <>
                 <MobileNavLink to="/pharmacies" icon={<FaStore />} label="Pharmacies" onClick={() => setIsMobileMenuOpen(false)} />
                 <MobileNavLink to="/medicines" icon={<FaPills />} label="Medicines" onClick={() => setIsMobileMenuOpen(false)} />

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Order, OrderItem } from '../api/types';
+import type { Order } from '../api/types';
 import { orderApi } from '../api/endpoints';
 
 interface CartItem {

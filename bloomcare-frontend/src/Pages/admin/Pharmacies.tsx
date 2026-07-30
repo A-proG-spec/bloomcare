@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { adminApi } from '../../api/endpoints/admin';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Button } from '../../components/common/Button';
@@ -10,23 +10,49 @@ import {
   FaStar, 
   FaMapMarkerAlt, 
   FaUser,
-  FaPhone,
-  FaEnvelope
 } from 'react-icons/fa';
 
+// ✅ ADDED: Proper types for Medicine
+interface Medicine {
+  _id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  stockStatus: string;
+}
+
+// ✅ ADDED: Proper types for Pharmacy
+interface Pharmacy {
+  _id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  image?: string;
+  isActive: boolean;
+  rating: number;
+  totalReviews: number;
+  medicines?: Medicine[];
+  owner?: {
+    _id: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+  };
+}
+
 export const AdminPharmacies: React.FC = () => {
-  const [pharmacies, setPharmacies] = useState<any[]>([]);
+  const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalPharmacies, setTotalPharmacies] = useState(0);
 
-  useEffect(() => {
-    loadPharmacies();
-  }, [search, page]);
+  // ✅ FIXED: Use ref to prevent double execution
+  const hasLoaded = useRef(false);
 
-  const loadPharmacies = async () => {
+  const loadPharmacies = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await adminApi.getAllPharmacies({
@@ -37,20 +63,29 @@ export const AdminPharmacies: React.FC = () => {
       setPharmacies(result.pharmacies || []);
       setTotalPages(result.pagination?.pages || 1);
       setTotalPharmacies(result.pagination?.total || 0);
-    } catch (error) {
-      console.error('Failed to load pharmacies:', error);
+    } catch {
+      // ✅ FIXED: Removed unused 'error' variable
       toast.error('Failed to load pharmacies');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [search, page]);
+
+  // ✅ FIXED: Only call once on mount
+  useEffect(() => {
+    if (!hasLoaded.current) {
+      hasLoaded.current = true;
+      loadPharmacies();
+    }
+  }, [loadPharmacies]);
 
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {
     try {
       await adminApi.togglePharmacyStatus(id);
       toast.success(`Pharmacy ${currentStatus ? 'deactivated' : 'activated'} successfully`);
       loadPharmacies();
-    } catch (error) {
+    } catch {
+      // ✅ FIXED: Removed unused 'error' variable
       toast.error('Failed to toggle pharmacy status');
     }
   };
@@ -114,7 +149,7 @@ export const AdminPharmacies: React.FC = () => {
                   </p>
                   <p className="text-sm text-gray-500 flex items-center gap-1 font-outfit">
                     <FaUser className="w-3 h-3" />
-                    {pharmacy.owner?.fullName}
+                    {pharmacy.owner?.fullName || 'Unknown'}
                   </p>
                   <div className="flex items-center gap-2 mt-2">
                     <span className={`text-xs px-2 py-0.5 rounded-xl font-medium font-outfit ${

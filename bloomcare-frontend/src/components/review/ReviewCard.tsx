@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import type { Review } from '../../api/types';
 import { RatingStars } from './RatingStars';
-import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
-import { FaUser, FaEdit, FaTrash, FaStar } from 'react-icons/fa';
+import { FaUser, FaEdit, FaTrash } from 'react-icons/fa';
 
 interface ReviewCardProps {
   review: Review;
@@ -14,6 +13,15 @@ interface ReviewCardProps {
   canDelete?: boolean;
   canEdit?: boolean;
   currentUserId?: string;
+}
+
+// ✅ ADDED: Type for API error response
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
 }
 
 export const ReviewCard: React.FC<ReviewCardProps> = ({
@@ -29,7 +37,8 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   const [editComment, setEditComment] = useState(review.comment);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isOwnReview = currentUserId === review.user?._id;
+  // ✅ FIXED: Use type assertion to access _id
+  const isOwnReview = currentUserId === (review.user as { _id?: string })?._id;
 
   const handleSubmitEdit = async () => {
     if (!editComment.trim()) {
@@ -45,8 +54,10 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       });
       toast.success('Review updated successfully');
       setIsEditModalOpen(false);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update review');
+    } catch (error: unknown) {
+      // ✅ FIXED: Properly typed error
+      const err = error as ApiError;
+      toast.error(err.response?.data?.message || 'Failed to update review');
     } finally {
       setIsSubmitting(false);
     }

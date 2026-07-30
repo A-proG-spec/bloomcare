@@ -5,11 +5,9 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { formatDate } from '../../utils/formatters';
-import toast from 'react-hot-toast';
 import { 
   FaClipboardList, 
   FaStore, 
-  FaUser, 
   FaClock, 
   FaCheck, 
   FaTimes, 

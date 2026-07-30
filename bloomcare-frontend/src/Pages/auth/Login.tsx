@@ -8,7 +8,7 @@ import { authApi } from '../../api/endpoints';
 import { useAuthStore } from '../../store/authStore';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
-import { FaEnvelope, FaLock, FaArrowRight, FaUserMd, FaShieldAlt } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaArrowRight, FaUserMd } from 'react-icons/fa';
 
 const loginSchema = z.object({
     email: z.string().email('Invalid email address'),
@@ -45,8 +45,9 @@ export const Login: React.FC = () => {
                 toast.success('Login successful!');
                 navigate('/');
             }
-        } catch (error: any) {
-            const message = error.response?.data?.message || 'Login failed. Please try again.';
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
+            const message = err.response?.data?.message || 'Login failed. Please try again.';
             toast.error(message);
         } finally {
             setIsLoading(false);

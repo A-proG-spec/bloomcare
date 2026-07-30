@@ -19,7 +19,7 @@ import {
   FaCamera,
   FaTimes,
   FaCheck,
-  FaBuilding,
+  // ✅ REMOVED: FaBuilding,
   FaLocationArrow
 } from 'react-icons/fa';
 

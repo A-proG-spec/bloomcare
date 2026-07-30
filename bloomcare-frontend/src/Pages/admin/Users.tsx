@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { adminApi } from '../../api/endpoints/admin';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Button } from '../../components/common/Button';
@@ -6,32 +6,42 @@ import { Modal } from '../../components/common/Modal';
 import toast from 'react-hot-toast';
 import { 
   FaUsers, 
-  FaSearch, 
   FaUserCog, 
   FaTrash, 
-  FaUser, 
   FaEnvelope, 
   FaCheck, 
   FaTimes as FaTimesIcon 
 } from 'react-icons/fa';
 
+// ✅ ADDED: Proper types
+interface User {
+  _id: string;
+  fullName: string;
+  email: string;
+  role: 'admin' | 'user' | 'pharmacy_owner';
+  isEmailVerified: boolean;
+  image?: string;
+  phone?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export const Users: React.FC = () => {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
-  const [newRole, setNewRole] = useState('');
+  const [newRole, setNewRole] = useState<'admin' | 'user' | 'pharmacy_owner'>('user');
 
-  useEffect(() => {
-    loadUsers();
-  }, [search, roleFilter, page]);
+  // ✅ FIXED: Use ref to prevent double execution
+  const hasLoaded = useRef(false);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await adminApi.getUsers({
@@ -43,22 +53,30 @@ export const Users: React.FC = () => {
       setUsers(result.users || []);
       setTotalPages(result.pagination?.pages || 1);
       setTotalUsers(result.pagination?.total || 0);
-    } catch (error) {
-      console.error('Failed to load users:', error);
+    } catch {
       toast.error('Failed to load users');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [search, roleFilter, page]);
 
+  // ✅ FIXED: Only call once on mount
+  useEffect(() => {
+    if (!hasLoaded.current) {
+      hasLoaded.current = true;
+      loadUsers();
+    }
+  }, [loadUsers]);
+
+  // ✅ FIXED: Removed 'any' type - use proper type
   const handleRoleChange = async () => {
     if (!selectedUser || !newRole) return;
     try {
-      await adminApi.updateUserRole(selectedUser._id, newRole as any);
+      await adminApi.updateUserRole(selectedUser._id, newRole);
       toast.success('User role updated successfully');
       setIsRoleModalOpen(false);
       loadUsers();
-    } catch (error) {
+    } catch {
       toast.error('Failed to update user role');
     }
   };
@@ -69,7 +87,7 @@ export const Users: React.FC = () => {
       await adminApi.deleteUser(userId);
       toast.success('User deleted successfully');
       loadUsers();
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete user');
     }
   };
@@ -107,7 +125,7 @@ export const Users: React.FC = () => {
               backgroundRepeat: 'no-repeat'
             }}
           />
-        </div> {/* ✅ THIS CLOSING TAG WAS MISSING */}
+        </div>
 
         <select
           value={roleFilter}
@@ -243,7 +261,7 @@ export const Users: React.FC = () => {
           </p>
           <select
             value={newRole}
-            onChange={(e) => setNewRole(e.target.value)}
+            onChange={(e) => setNewRole(e.target.value as 'admin' | 'user' | 'pharmacy_owner')}
             className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#22c55e] focus:border-transparent transition-all duration-200 font-outfit"
           >
             <option value="user">User</option>
