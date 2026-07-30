@@ -8,21 +8,30 @@ export const pharmacyApi = {
     page?: number;
     limit?: number;
   }) => {
+    console.log('🔍 [API] Requesting pharmacies with params:', params);
     const response = await apiClient.get('/pharmacy', { params });
-    // ✅ Return the full response, store will handle extraction
+    console.log('🔍 [API] Raw response:', response);
+    console.log('🔍 [API] response.data:', response.data);
+    console.log('🔍 [API] response.data.data:', response.data?.data);
+    console.log('🔍 [API] response.data.data.pharmacies:', response.data?.data?.pharmacies);
     return response.data;
   },
 
   getNearbyPharmacies: async (lat: number, lng: number, radius?: number) => {
-    // ✅ FIXED: Use 'lat' and 'lng' as query params (matches backend)
+    console.log('🔍 [API] Requesting nearby pharmacies at lat:', lat, 'lng:', lng, 'radius:', radius);
     const response = await apiClient.get('/pharmacy/nearby', {
       params: { lat, lng, radius },
     });
+    console.log('🔍 [API] Nearby API response:', response);
+    console.log('🔍 [API] Nearby response.data:', response.data);
+    console.log('🔍 [API] Nearby response.data.data:', response.data?.data);
     return response.data;
   },
 
   getPharmacyById: async (id: string) => {
+    console.log('🔍 [API] Requesting pharmacy by id:', id);
     const response = await apiClient.get(`/pharmacy/${id}`);
+    console.log('🔍 [API] Pharmacy by id response:', response.data);
     return response.data.data;
   },
 

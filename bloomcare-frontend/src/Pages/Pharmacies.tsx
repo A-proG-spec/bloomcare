@@ -23,36 +23,48 @@ export const Pharmacies: React.FC = () => {
   const mapRef = useRef<any>(null);
 
   useEffect(() => {
+    console.log('🗺️ [Page] Component mounted, fetching pharmacies...');
     fetchPharmacies({ isActive: true });
   }, [fetchPharmacies]);
 
   // ✅ Debug: Log pharmacies when they change
   useEffect(() => {
-    console.log('Pharmacies in store:', pharmacies);
-    console.log('Number of pharmacies:', pharmacies.length);
+    console.log('🗺️ [Page] Pharmacies in store:', pharmacies);
+    console.log('🗺️ [Page] Number of pharmacies:', pharmacies.length);
     if (pharmacies.length > 0) {
-      console.log('First pharmacy:', pharmacies[0]);
-      console.log('Latitude:', pharmacies[0].latitude);
-      console.log('Longitude:', pharmacies[0].longitude);
+      console.log('🗺️ [Page] First pharmacy:', pharmacies[0]);
+      console.log('🗺️ [Page] Latitude:', pharmacies[0].latitude);
+      console.log('🗺️ [Page] Longitude:', pharmacies[0].longitude);
+      console.log('🗺️ [Page] IsActive:', pharmacies[0].isActive);
+      
+      // Check if coordinates are valid numbers
+      const lat = Number(pharmacies[0].latitude);
+      const lng = Number(pharmacies[0].longitude);
+      console.log('🗺️ [Page] Valid coordinates?', !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0);
+    } else {
+      console.warn('🗺️ [Page] No pharmacies found in store!');
     }
   }, [pharmacies]);
 
   const handleSearch = (query: string) => {
+    console.log('🔍 [Page] Searching for:', query);
     fetchPharmacies({ search: query, isActive: true });
     closeSearch();
   };
 
   const handleNearby = () => {
+    console.log('📍 [Page] Finding nearby pharmacies...');
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
+          console.log('📍 [Page] User location:', latitude, longitude);
           setMapCenter({ lat: latitude, lng: longitude });
           fetchNearbyPharmacies(latitude, longitude);
           closeSearch();
         },
         (error) => {
-          console.error('Geolocation error:', error);
+          console.error('❌ [Page] Geolocation error:', error);
           alert('Unable to get your location. Please enable location services.');
         }
       );
@@ -62,6 +74,7 @@ export const Pharmacies: React.FC = () => {
   };
 
   const searchByArea = async (areaName: string) => {
+    console.log('📍 [Page] Searching area:', areaName);
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(areaName)}&limit=1`
@@ -69,6 +82,7 @@ export const Pharmacies: React.FC = () => {
       const data = await response.json();
       if (data && data.length > 0) {
         const { lat, lon } = data[0];
+        console.log('📍 [Page] Area found at:', lat, lon);
         setMapCenter({ lat: parseFloat(lat), lng: parseFloat(lon) });
         fetchNearbyPharmacies(parseFloat(lat), parseFloat(lon));
         closeSearch();
@@ -76,19 +90,21 @@ export const Pharmacies: React.FC = () => {
         alert('Location not found. Please try a different search term.');
       }
     } catch (error) {
-      console.error('Geocoding error:', error);
+      console.error('❌ [Page] Geocoding error:', error);
       alert('Failed to search area. Please try again.');
     }
   };
 
   const handlePharmacyClick = (pharmacy: Pharmacy) => {
-    console.log('Pharmacy clicked:', pharmacy);
+    console.log('📍 [Page] Pharmacy clicked:', pharmacy.name);
+    console.log('📍 [Page] Coordinates:', pharmacy.latitude, pharmacy.longitude);
+    
     if (pharmacy.latitude && pharmacy.longitude) {
       setMapCenter({ lat: pharmacy.latitude, lng: pharmacy.longitude });
       setSelectedPharmacy(pharmacy);
       setIsListOpen(false);
     } else {
-      console.warn('Pharmacy missing coordinates:', pharmacy);
+      console.warn('⚠️ [Page] Pharmacy missing coordinates:', pharmacy);
     }
   };
 
