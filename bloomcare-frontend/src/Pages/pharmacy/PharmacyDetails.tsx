@@ -26,7 +26,6 @@ import {
   FaEdit,
   FaCalendarAlt
 } from 'react-icons/fa';
-// ✅ REMOVED: FaShoppingCart
 
 // ✅ ADDED: Type for medicine details
 interface MedicineDetail {
@@ -62,6 +61,9 @@ export const PharmacyDetails: React.FC = () => {
     setIsLoading(true);
     try {
       const data = await pharmacyApi.getPharmacyById(id);
+      console.log('Pharmacy data:', data);
+      console.log('Medicines:', data?.medicines);
+      console.log('Is array?', Array.isArray(data?.medicines));
       setPharmacy(data);
 
       if (isAuthenticated && user?.id) {
@@ -237,23 +239,28 @@ export const PharmacyDetails: React.FC = () => {
     );
   }
 
+  // ✅ FIXED: Safely handle medicines array with Array.isArray check
+  const medicinesArray = Array.isArray(pharmacy.medicines)
+    ? pharmacy.medicines
+    : [];
+
   // ✅ FIXED: Properly typed with explicit type instead of any
   const medicineDetails: Record<string, MedicineDetail> = 
-    pharmacy.medicines?.reduce((acc, med) => {
+    medicinesArray.reduce((acc, med) => {
       acc[med.medicine._id] = {
         price: med.price,
         quantity: med.quantity,
         stockStatus: med.stockStatus,
       };
       return acc;
-    }, {} as Record<string, MedicineDetail>) || {};
+    }, {} as Record<string, MedicineDetail>);
 
   const hasOpeningHours =
     pharmacy.openingHours &&
     Object.values(pharmacy.openingHours).some((val) => val && val.trim() !== '');
 
-  // ✅ FIXED: Map medicines to proper Medicine type with all required fields
-  const mappedMedicines: Medicine[] = pharmacy.medicines?.map((m) => ({
+  // ✅ FIXED: Map medicines using the safe array
+  const mappedMedicines: Medicine[] = medicinesArray.map((m) => ({
     _id: m.medicine._id,
     name: m.medicine.name,
     genericName: (m.medicine as { genericName?: string }).genericName || '',
@@ -263,7 +270,7 @@ export const PharmacyDetails: React.FC = () => {
     image: (m.medicine as { image?: string }).image || '',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-  })) || [];
+  }));
 
   return (
     <div className="space-y-8">
@@ -354,7 +361,7 @@ export const PharmacyDetails: React.FC = () => {
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold text-[rgb(0,88,64)] flex items-center gap-2">
             <FaPills className="w-5 h-5" />
-            Available Medicines ({pharmacy.medicines?.length || 0})
+            Available Medicines ({medicinesArray.length})
           </h2>
         </div>
         {mappedMedicines.length > 0 ? (
