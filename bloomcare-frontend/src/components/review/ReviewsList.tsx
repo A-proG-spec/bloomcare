@@ -6,7 +6,7 @@ import { Button } from '../common/Button';
 import { FaSort, FaStar } from 'react-icons/fa';
 
 interface ReviewsListProps {
-  reviews: Review[];
+  reviews: Review[] | null | undefined;  // ✅ Allow null/undefined
   isLoading?: boolean;
   sortBy?: 'newest' | 'oldest' | 'highest' | 'lowest';
   onSortChange?: (sort: 'newest' | 'oldest' | 'highest' | 'lowest') => void;
@@ -36,6 +36,9 @@ export const ReviewsList: React.FC<ReviewsListProps> = ({
   onPageChange,
   emptyMessage = 'No reviews yet. Be the first to review!',
 }) => {
+  // ✅ FIX: Always ensure reviews is an array
+  const safeReviews = Array.isArray(reviews) ? reviews : [];
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -44,7 +47,7 @@ export const ReviewsList: React.FC<ReviewsListProps> = ({
     );
   }
 
-  if (reviews.length === 0) {
+  if (safeReviews.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
         <FaStar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -82,13 +85,12 @@ export const ReviewsList: React.FC<ReviewsListProps> = ({
 
       {/* Reviews Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {reviews.map((review) => (
+        {safeReviews.map((review) => (
           <ReviewCard
             key={review._id}
             review={review}
             onDelete={onDelete}
             onUpdate={onUpdate}
-            // ✅ FIXED: Use type assertion to access _id
             canDelete={canDeleteAny || (canEditOwn && currentUserId === (review.user as { _id?: string })?._id)}
             canEdit={canEditOwn}
             currentUserId={currentUserId}

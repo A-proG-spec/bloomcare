@@ -83,22 +83,30 @@ export const PharmacyDetails: React.FC = () => {
     }
   }, [id, isAuthenticated, user?.id, navigate]);
 
-  const loadReviews = useCallback(async () => {
-    if (!id) return;
-    try {
-      const response = await reviewApi.getPharmacyReviews(id, {
-        page: reviewPage,
-        limit: 6,
-        sortBy,
-      });
-      setReviews(response.data || []);
-      if (response.pagination) {
-        setReviewTotalPages(response.pagination.pages);
-      }
-    } catch {
-      console.error('Failed to fetch reviews:');
+const loadReviews = useCallback(async () => {
+  if (!id) return;
+  try {
+    // ✅ FIXED: Now the API returns { reviews: [], pagination: {} }
+    const response = await reviewApi.getPharmacyReviews(id, {
+      page: reviewPage,
+      limit: 6,
+      sortBy,
+    });
+    
+    console.log('Reviews response:', response);
+    
+    // ✅ Use response.reviews (not response.data)
+    setReviews(response.reviews || []);
+    
+    if (response.pagination) {
+      setReviewTotalPages(response.pagination.pages || 1);
     }
-  }, [id, reviewPage, sortBy]);
+  } catch (error) {
+    console.error('Failed to fetch reviews:', error);
+    setReviews([]);
+    setReviewTotalPages(1);
+  }
+}, [id, reviewPage, sortBy]);
 
   // ✅ FIXED: Only call once on mount
   useEffect(() => {
