@@ -27,6 +27,9 @@ export const MedicineList: React.FC<MedicineListProps> = ({
   onAddToCart,
   medicineDetails,
 }) => {
+  // ✅ FIX: Always ensure medicines is an array
+  const safeMedicines = Array.isArray(medicines) ? medicines : [];
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -35,7 +38,7 @@ export const MedicineList: React.FC<MedicineListProps> = ({
     );
   }
 
-  if (medicines.length === 0) {
+  if (safeMedicines.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
         <FaPills className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -46,7 +49,7 @@ export const MedicineList: React.FC<MedicineListProps> = ({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {medicines.map((medicine) => {
+      {safeMedicines.map((medicine) => {
         const details = medicineDetails?.[medicine._id];
         return (
           <MedicineCard
