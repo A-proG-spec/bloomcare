@@ -1,0 +1,131 @@
+# Project Structure
+
+```
+bloomcare-frontend/
+├── public
+│   ├── favicon.svg
+│   └── icons.svg
+├── src
+│   ├── api
+│   │   ├── endpoints
+│   │   │   ├── admin.ts
+│   │   │   ├── auth.ts
+│   │   │   ├── index.ts
+│   │   │   ├── medicine.ts
+│   │   │   ├── notification.ts
+│   │   │   ├── order.ts
+│   │   │   ├── payment.ts
+│   │   │   ├── pharmacy.ts
+│   │   │   └── review.ts
+│   │   ├── client.ts
+│   │   └── types.ts
+│   ├── assets
+│   │   ├── hero.png
+│   │   ├── react.svg
+│   │   └── vite.svg
+│   ├── components
+│   │   ├── common
+│   │   │   ├── Badge.tsx
+│   │   │   ├── Button.tsx
+│   │   │   ├── Card.tsx
+│   │   │   ├── ErrorBoundary.tsx
+│   │   │   ├── index.ts
+│   │   │   ├── Input.tsx
+│   │   │   ├── LoadingSpinner.tsx
+│   │   │   └── Modal.tsx
+│   │   ├── layout
+│   │   │   ├── Footer.tsx
+│   │   │   ├── Layout.tsx
+│   │   │   └── Navbar.tsx
+│   │   ├── medicine
+│   │   │   ├── MedicineCard.tsx
+│   │   │   ├── MedicineList.tsx
+│   │   │   └── Medicines.tsx
+│   │   ├── notification
+│   │   │   ├── NotificationBell.tsx
+│   │   │   └── NotificationList.tsx
+│   │   ├── order
+│   │   │   └── OrderCard.tsx
+│   │   ├── pharmacy
+│   │   │   ├── PharmacyCard.tsx
+│   │   │   ├── PharmacyMap.tsx
+│   │   │   └── PharmacySearchBar.tsx
+│   │   └── review
+│   │       ├── RatingStars.tsx
+│   │       ├── ReviewCard.tsx
+│   │       └── ReviewsList.tsx
+│   ├── constants
+│   │   └── orderStatus.ts
+│   ├── hooks
+│   │   ├── useDebounce.ts
+│   │   ├── useLocalStorage.ts
+│   │   └── usePagination.ts
+│   ├── Pages
+│   │   ├── admin
+│   │   │   ├── AdminApplications.tsx
+│   │   │   ├── AdminLayout.tsx
+│   │   │   ├── AdminOrders.tsx
+│   │   │   ├── Analytics.tsx
+│   │   │   ├── Applications.tsx
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── Pharmacies.tsx
+│   │   │   └── Users.tsx
+│   │   ├── auth
+│   │   │   ├── Login.tsx
+│   │   │   ├── Register.tsx
+│   │   │   └── VerifyEmail.tsx
+│   │   ├── cart
+│   │   │   ├── Cart.tsx
+│   │   │   └── Checkout.tsx
+│   │   ├── medicine
+│   │   │   ├── MedicineDetails.tsx
+│   │   │   └── Medicines.tsx
+│   │   ├── order
+│   │   │   ├── OrderDetails.tsx
+│   │   │   └── Orders.tsx
+│   │   ├── pharmacy
+│   │   │   ├── ApplyPharmacy.tsx
+│   │   │   ├── EditPharmacy.tsx
+│   │   │   ├── MyApplication.tsx
+│   │   │   ├── MyPharmacy.tsx
+│   │   │   ├── PharmacyDetails.tsx
+│   │   │   └── PharmacyInventory.tsx
+│   │   ├── profile
+│   │   │   ├── ChangePassword.tsx
+│   │   │   └── Profile.tsx
+│   │   ├── Landing.tsx
+│   │   └── Pharmacies.tsx
+│   ├── routes
+│   │   ├── index.tsx
+│   │   └── PrivateRoute.tsx
+│   ├── store
+│   │   ├── applicationStore.ts
+│   │   ├── authStore.ts
+│   │   ├── cartStore.ts
+│   │   ├── medicineStore.ts
+│   │   ├── notificationStore.ts
+│   │   ├── orderStore.ts
+│   │   ├── pharmacyStore.ts
+│   │   └── uiStore.ts
+│   ├── types
+│   │   └── pharmacy.types.ts
+│   ├── utils
+│   │   ├── errorHandler.ts
+│   │   └── formatters.ts
+│   ├── App.css
+│   ├── App.tsx
+│   ├── index.css
+│   └── main.tsx
+├── eslint.config.js
+├── folderstructure.txt
+├── index.html
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── README.md
+├── tailwind.config.js
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+└── vite.config.ts
+```

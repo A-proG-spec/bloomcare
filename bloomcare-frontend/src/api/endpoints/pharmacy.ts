@@ -1,0 +1,96 @@
+import apiClient from '../client';
+
+export const pharmacyApi = {
+  // ===== LIST / SEARCH =====
+  getPharmacies: async (params?: {
+    search?: string;
+    isActive?: boolean;
+    page?: number;
+    limit?: number;
+  }) => {
+    const response = await apiClient.get('/pharmacy', { params });
+    return response.data;
+  },
+
+  getNearbyPharmacies: async (lat: number, lng: number, radius?: number) => {
+    const response = await apiClient.get('/pharmacy/nearby', {
+      params: { lat, lng, radius },
+    });
+    return response.data;
+  },
+
+  getPharmacyById: async (id: string) => {
+    const response = await apiClient.get(`/pharmacy/${id}`);
+    return response.data.data;
+  },
+
+  // ===== APPLICATION =====
+  applyForPharmacy: async (data: {
+    pharmacyName: string;
+    address: string;
+    latitude: number;
+    longitude: number;
+    phone: string;
+    email: string;
+    website?: string;
+    openingHours?: any;
+  }) => {
+    const response = await apiClient.post('/pharmacy/apply', data);
+    return response.data.data;
+  },
+
+  // FIX: add colon after method name
+  getMyApplication: async () => {
+    const response = await apiClient.get('/pharmacy/my-application');
+    return response.data.data;
+  },
+
+  // FIX: add colon after method name
+  getMyPharmacy: async () => {
+    const response = await apiClient.get('/pharmacy/my-pharmacy');
+    return response.data.data;
+  },
+
+  updatePharmacy: async (data: {
+    name?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+    phone?: string;
+    email?: string;
+    website?: string;
+    openingHours?: any;
+    isActive?: boolean;
+  }) => {
+    const response = await apiClient.put('/pharmacy/update', data);
+    return response.data.data;
+  },
+
+  uploadPharmacyImage: async (image: File) => {
+    const formData = new FormData();
+    formData.append('image', image);
+    const response = await apiClient.post('/pharmacy/upload-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+  },
+
+  // ===== ADMIN =====
+  getAllApplications: async (params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) => {
+    const response = await apiClient.get('/pharmacy/applications', { params });
+    return response.data.data;
+  },
+
+  reviewApplication: async (id: string, data: {
+    status: 'approved' | 'rejected';
+    adminNotes?: string;
+  }) => {
+    // ✅ The backend will get adminId from the authenticated user (req.user)
+    const response = await apiClient.put(`/pharmacy/applications/${id}/review`, data);
+    return response.data.data;
+  }
+};
