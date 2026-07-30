@@ -9,10 +9,12 @@ export const pharmacyApi = {
     limit?: number;
   }) => {
     const response = await apiClient.get('/pharmacy', { params });
+    // ✅ Return the full response, store will handle extraction
     return response.data;
   },
 
   getNearbyPharmacies: async (lat: number, lng: number, radius?: number) => {
+    // ✅ FIXED: Use 'lat' and 'lng' as query params (matches backend)
     const response = await apiClient.get('/pharmacy/nearby', {
       params: { lat, lng, radius },
     });
@@ -39,13 +41,11 @@ export const pharmacyApi = {
     return response.data.data;
   },
 
-  // FIX: add colon after method name
   getMyApplication: async () => {
     const response = await apiClient.get('/pharmacy/my-application');
     return response.data.data;
   },
 
-  // FIX: add colon after method name
   getMyPharmacy: async () => {
     const response = await apiClient.get('/pharmacy/my-pharmacy');
     return response.data.data;
@@ -89,7 +89,6 @@ export const pharmacyApi = {
     status: 'approved' | 'rejected';
     adminNotes?: string;
   }) => {
-    // ✅ The backend will get adminId from the authenticated user (req.user)
     const response = await apiClient.put(`/pharmacy/applications/${id}/review`, data);
     return response.data.data;
   }

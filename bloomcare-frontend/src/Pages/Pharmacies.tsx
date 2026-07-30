@@ -6,8 +6,6 @@ import { PharmacySearchBar } from '../components/pharmacy/PharmacySearchBar';
 import { PharmacyMap } from '../components/pharmacy/PharmacyMap';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import type { Pharmacy } from '../types/pharmacy.types';
-import type { Map as LeafletMap } from 'leaflet';
-// ✅ REMOVED: import { MapContainer } from 'react-leaflet';
 
 export const Pharmacies: React.FC = () => {
   const {
@@ -20,14 +18,24 @@ export const Pharmacies: React.FC = () => {
   const { isSearchOpen, closeSearch, openSearch } = useUIStore();
 
   const [mapCenter, setMapCenter] = useState({ lat: 9.0222, lng: 38.7468 });
-  // ✅ REMOVED: const [searchQuery, setSearchQuery] = useState('');
   const [selectedPharmacy, setSelectedPharmacy] = useState<Pharmacy | null>(null);
   const [isListOpen, setIsListOpen] = useState(false);
-const mapRef = useRef<LeafletMap | null>(null);
+  const mapRef = useRef<any>(null);
 
   useEffect(() => {
     fetchPharmacies({ isActive: true });
   }, [fetchPharmacies]);
+
+  // ✅ Debug: Log pharmacies when they change
+  useEffect(() => {
+    console.log('Pharmacies in store:', pharmacies);
+    console.log('Number of pharmacies:', pharmacies.length);
+    if (pharmacies.length > 0) {
+      console.log('First pharmacy:', pharmacies[0]);
+      console.log('Latitude:', pharmacies[0].latitude);
+      console.log('Longitude:', pharmacies[0].longitude);
+    }
+  }, [pharmacies]);
 
   const handleSearch = (query: string) => {
     fetchPharmacies({ search: query, isActive: true });
@@ -74,22 +82,25 @@ const mapRef = useRef<LeafletMap | null>(null);
   };
 
   const handlePharmacyClick = (pharmacy: Pharmacy) => {
+    console.log('Pharmacy clicked:', pharmacy);
     if (pharmacy.latitude && pharmacy.longitude) {
       setMapCenter({ lat: pharmacy.latitude, lng: pharmacy.longitude });
       setSelectedPharmacy(pharmacy);
       setIsListOpen(false);
+    } else {
+      console.warn('Pharmacy missing coordinates:', pharmacy);
     }
   };
 
   return (
     <div className="relative h-[calc(100vh-64px)] w-full overflow-hidden">
-      {/* Full‑screen map */}
       <div className="absolute inset-0">
         <PharmacyMap
           pharmacies={pharmacies}
           center={mapCenter}
           zoom={13}
           selectedPharmacy={selectedPharmacy}
+          onPharmacySelect={handlePharmacyClick}
           ref={mapRef}
         />
       </div>

@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import type { Pharmacy } from '../types/pharmacy.types';
 import { pharmacyApi } from '../api/endpoints/pharmacy';
 
-// ✅ ADDED: Type for API error
 interface ApiError {
   response?: {
     status?: number;
@@ -15,7 +14,7 @@ interface ApiError {
 interface PharmacyState {
   pharmacies: Pharmacy[];
   selectedPharmacy: Pharmacy | null;
-  pharmacy: Pharmacy | null; // For pharmacy owner's own pharmacy
+  pharmacy: Pharmacy | null;
   isLoading: boolean;
   searchQuery: string;
 
@@ -37,9 +36,18 @@ export const usePharmacyStore = create<PharmacyState>((set) => ({
     set({ isLoading: true });
     try {
       const response = await pharmacyApi.getPharmacies(params);
-      set({ pharmacies: response.data.pharmacies || [] });
+      
+      // ✅ FIXED: Handle the nested response structure
+      // Response: { success: true, data: { pharmacies: [], pagination: {} } }
+      const pharmacies = response?.data?.pharmacies || response?.pharmacies || [];
+      
+      console.log('fetchPharmacies - pharmacies:', pharmacies);
+      console.log('fetchPharmacies - is array?', Array.isArray(pharmacies));
+      
+      set({ pharmacies });
     } catch (error) {
       console.error('Failed to fetch pharmacies:', error);
+      set({ pharmacies: [] });
     } finally {
       set({ isLoading: false });
     }
@@ -49,15 +57,23 @@ export const usePharmacyStore = create<PharmacyState>((set) => ({
     set({ isLoading: true });
     try {
       const response = await pharmacyApi.getNearbyPharmacies(lat, lng);
-      set({ pharmacies: response.data || [] });
+      
+      // ✅ FIXED: Handle the nested response structure
+      // Response: { success: true, data: [...] }
+      const pharmacies = response?.data || response || [];
+      
+      console.log('fetchNearbyPharmacies - pharmacies:', pharmacies);
+      console.log('fetchNearbyPharmacies - is array?', Array.isArray(pharmacies));
+      
+      set({ pharmacies });
     } catch (error) {
       console.error('Failed to fetch nearby pharmacies:', error);
+      set({ pharmacies: [] });
     } finally {
       set({ isLoading: false });
     }
   },
 
-  // ✅ FIXED: Removed 'any' type
   fetchPharmacy: async () => {
     set({ isLoading: true });
     try {
