@@ -16,35 +16,21 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   
-  // Get quantity of a specific medicine in cart
   getItemQuantity: (medicineId: string) => number;
-  
-  // Check if a medicine is in cart
   isInCart: (medicineId: string) => boolean;
-  
-  // Get items grouped by pharmacy
   getItemsByPharmacy: () => { [pharmacyId: string]: { pharmacyName: string; items: CartItem[] } };
-  
-  // Get all unique pharmacy IDs
   getPharmacyIds: () => string[];
-  
-  // Add item to cart (no pharmacy restriction)
   addItem: (item: CartItem) => boolean;
-  
-  // Remove item
   removeItem: (medicineId: string) => void;
-  
-  // Update quantity
   updateQuantity: (medicineId: string, quantity: number) => void;
-  
-  // Clear cart
   clearCart: () => void;
-  
-  // Get totals
   getTotalItems: () => number;
   getTotalPrice: () => number;
   getCartCount: () => number;
   getTotalPriceByPharmacy: (pharmacyId: string) => number;
+  
+  // ✅ Add method to clear cart with storage
+  clearCartAndStorage: () => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -125,7 +111,18 @@ export const useCartStore = create<CartState>()(
         }));
       },
 
-      clearCart: () => set({ items: [] }),
+      clearCart: () => {
+        console.log('🛒 Clearing cart...');
+        set({ items: [] });
+      },
+
+      // ✅ Add this method to clear cart AND storage
+      clearCartAndStorage: () => {
+        console.log('🛒 Clearing cart and storage...');
+        set({ items: [] });
+        // ✅ Remove the persisted cart from localStorage
+        localStorage.removeItem('cart-storage');
+      },
 
       getTotalItems: () => {
         return get().items.reduce((sum, item) => sum + item.quantity, 0);

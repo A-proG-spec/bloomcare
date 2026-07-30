@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '../api/types';
 import { authApi } from '../api/endpoints/auth';
+import { useCartStore } from './cartStore'; // ✅ Import cart store
 
 interface AuthState {
   user: User | null;
@@ -36,13 +37,18 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         try {
           const { refreshToken } = get();
-          // ✅ Send refreshToken in body
           if (refreshToken) {
             await authApi.logout(refreshToken);
           }
         } catch (error) {
           // Ignore errors on logout
         }
+        
+        // ✅ FIX: Clear cart on logout
+        useCartStore.getState().clearCart();
+        // ✅ Also clear the persisted cart storage
+        localStorage.removeItem('cart-storage');
+        
         set({
           user: null,
           accessToken: null,
