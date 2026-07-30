@@ -1,3 +1,5 @@
+// src/components/medicine/MedicineList.tsx
+
 import React from 'react';
 import type { Medicine } from '../../api/types';
 import { MedicineCard } from './MedicineCard';
@@ -5,7 +7,7 @@ import { LoadingSpinner } from '../common/LoadingSpinner';
 import { FaPills } from 'react-icons/fa';
 
 interface MedicineListProps {
-  medicines: Medicine[] | null | undefined;  // ✅ Allow null/undefined
+  medicines: Medicine[];
   isLoading?: boolean;
   showPrice?: boolean;
   showAddButton?: boolean;
@@ -33,7 +35,6 @@ export const MedicineList: React.FC<MedicineListProps> = ({
   console.log('MedicineList is array?', Array.isArray(medicines));
 
   // ✅ FIX: Always ensure medicines is an array
-  // If medicines is null, undefined, or not an array, use empty array
   const safeMedicines = Array.isArray(medicines) ? medicines : [];
 
   console.log('MedicineList safeMedicines:', safeMedicines);
