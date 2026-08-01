@@ -1,39 +1,36 @@
-// bloomcare-frontend/src/routes/index.tsx
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
-import { PrivateRoute } from './PrivateRoute';
 
-// Public Pages
+// Pages
 import { Landing } from '../Pages/Landing';
 import { Login } from '../Pages/auth/Login';
 import { Register } from '../Pages/auth/Register';
 import { VerifyEmail } from '../Pages/auth/VerifyEmail';
 import { Pharmacies } from '../Pages/Pharmacies';
-import { Medicines } from '../Pages/medicine/Medicines';
 import { PharmacyDetails } from '../Pages/pharmacy/PharmacyDetails';
-import { MedicineDetails } from '../Pages/medicine/MedicineDetails';
-
-// Protected Pages
+import { Medicines } from '../Pages/medicine/Medicines';
 import { Orders } from '../Pages/order/Orders';
-import { Cart } from '../Pages/cart/Cart';
+import { OrderDetails } from '../Pages/order/OrderDetails';
 import { Profile } from '../Pages/profile/Profile';
 import { ChangePassword } from '../Pages/profile/ChangePassword';
 import { ApplyPharmacy } from '../Pages/pharmacy/ApplyPharmacy';
+import { Cart } from '../Pages/cart/Cart';
+import { Checkout } from '../Pages/cart/Checkout';  // ✅ Make sure this is imported
 import { MyApplication } from '../Pages/pharmacy/MyApplication';
 import { MyPharmacy } from '../Pages/pharmacy/MyPharmacy';
 import { EditPharmacy } from '../Pages/pharmacy/EditPharmacy';
-import { PharmacyInventory } from '../Pages/pharmacy/PharmacyInventory';
-import { OrderDetails } from '../Pages/order/OrderDetails';
-
-// Admin Pages
+import { MedicineDetails } from '../Pages/medicine/MedicineDetails';
 import { AdminLayout } from '../Pages/admin/AdminLayout';
-import { Dashboard as AdminDashboard } from '../Pages/admin/Dashboard';
+import { Dashboard } from '../Pages/admin/Dashboard';
 import { Users } from '../Pages/admin/Users';
 import { AdminPharmacies } from '../Pages/admin/Pharmacies';
 import { AdminApplications } from '../Pages/admin/AdminApplications';
 import { AdminOrders } from '../Pages/admin/AdminOrders';
 import { AdminAnalytics } from '../Pages/admin/Analytics';
+import { PharmacyInventory } from '../Pages/pharmacy/PharmacyInventory';
+
+import { PrivateRoute } from './PrivateRoute';
 
 export const router = createBrowserRouter([
   {
@@ -44,34 +41,48 @@ export const router = createBrowserRouter([
       </ErrorBoundary>
     ),
     children: [
-      // Public routes
+      // ✅ PUBLIC ROUTES (No authentication required)
       { index: true, element: <Landing /> },
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
       { path: 'verify-email', element: <VerifyEmail /> },
       { path: 'pharmacies', element: <Pharmacies /> },
-      { path: 'medicines', element: <Medicines /> },
       { path: 'pharmacy/:id', element: <PharmacyDetails /> },
+      { path: 'medicines', element: <Medicines /> },
       { path: 'medicines/:id', element: <MedicineDetails /> },
+      
+      // ✅ Cart is public (anyone can view)
+      { path: 'cart', element: <Cart /> },
+      
+      // ✅ Checkout - MUST be public OR inside PrivateRoute
+      // If you want it public (anyone can view, but login required to proceed):
+      { path: 'checkout', element: <Checkout /> },
+      
+      // OR if you want it protected (only logged-in users):
+      // Move it inside PrivateRoute below
 
-      // Protected routes
+      // ✅ PROTECTED ROUTES (Authentication required)
       {
         element: <PrivateRoute />,
         children: [
-          { path: 'orders', element: <Orders /> },
-          { path: 'orders/:id', element: <OrderDetails /> },
-          { path: 'cart', element: <Cart /> },
+          // Profile routes
           { path: 'profile', element: <Profile /> },
           { path: 'profile/change-password', element: <ChangePassword /> },
+          
+          // Order routes
+          { path: 'orders', element: <Orders /> },
+          { path: 'orders/:id', element: <OrderDetails /> },
+          
+          // Pharmacy owner routes
+          { path: 'apply-pharmacy', element: <ApplyPharmacy /> },
+          { path: 'my-application', element: <MyApplication /> },
           { path: 'my-pharmacy', element: <MyPharmacy /> },
           { path: 'edit-pharmacy', element: <EditPharmacy /> },
-          { path: 'inventory', element: <PharmacyInventory /> },
-          { path: 'my-application', element: <MyApplication /> },
-          { path: 'apply-pharmacy', element: <ApplyPharmacy /> },
+          { path: 'pharmacy-inventory', element: <PharmacyInventory /> },
         ],
       },
 
-      // Admin routes (protected)
+      // ✅ ADMIN ROUTES (Authentication + Admin role required)
       {
         element: <PrivateRoute />,
         children: [
@@ -79,7 +90,7 @@ export const router = createBrowserRouter([
             path: 'admin',
             element: <AdminLayout />,
             children: [
-              { index: true, element: <AdminDashboard /> },
+              { index: true, element: <Dashboard /> },
               { path: 'users', element: <Users /> },
               { path: 'pharmacies', element: <AdminPharmacies /> },
               { path: 'applications', element: <AdminApplications /> },
