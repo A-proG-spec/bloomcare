@@ -1,3 +1,4 @@
+// bloomcare-frontend/src/components/pharmacy/PharmacySearchBar.tsx
 import React, { useState } from 'react';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
@@ -22,24 +23,23 @@ export const PharmacySearchBar: React.FC<PharmacySearchBarProps> = ({
     onSearch(query);
   };
 
-
   return (
-    <div className="flex flex-col gap-3 w-full">
-      {/* Search by name/address */}
+    <div className="flex flex-col gap-2 w-full">
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 w-full">
         <div className="flex-1">
           <Input
-            placeholder="Search pharmacies by name or address..."
+            placeholder="Search pharmacies..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            icon={<FaSearch className="w-4 h-4" />}
+            icon={<FaSearch className="w-3 h-3" />}
+            className="text-sm py-1.5 px-3"
           />
         </div>
-        <div className="flex gap-2">
-          <Button type="submit" isLoading={isLoading} icon={<FaSearch className="w-4 h-4" />}>
+        <div className="flex gap-1.5">
+          <Button type="submit" size="sm" isLoading={isLoading} icon={<FaSearch className="w-3 h-3" />}>
             Search
           </Button>
-          <Button type="button" variant="outline" onClick={onNearby} icon={<FaMapMarkerAlt className="w-4 h-4" />}>
+          <Button type="button" size="sm" variant="outline" onClick={onNearby} icon={<FaMapMarkerAlt className="w-3 h-3" />}>
             Nearby
           </Button>
         </div>

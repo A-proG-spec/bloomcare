@@ -1,3 +1,4 @@
+// src/Pages/pharmacy/PharmacyDetails.tsx
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
@@ -9,7 +10,7 @@ import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { RatingStars } from '../../components/review/RatingStars';
 import { ReviewsList } from '../../components/review/ReviewsList';
-import { MedicineList } from '../../components/medicine/MedicineList';
+import {MedicineList} from '../../components/medicine/MedicineList';
 import { Modal } from '../../components/common/Modal';
 import type { Pharmacy } from '../../types/pharmacy.types';
 import type { Review, Medicine } from '../../api/types';
@@ -27,7 +28,6 @@ import {
   FaCalendarAlt
 } from 'react-icons/fa';
 
-// ✅ ADDED: Type for medicine details
 interface MedicineDetail {
   price: number;
   quantity: number;
@@ -52,18 +52,13 @@ export const PharmacyDetails: React.FC = () => {
   const [reviewPage, setReviewPage] = useState(1);
   const [reviewTotalPages, setReviewTotalPages] = useState(1);
 
-  // ✅ FIXED: Use ref to prevent double execution
   const hasLoaded = useRef(false);
 
-  // ✅ FIXED: Define functions BEFORE useEffect with useCallback
   const loadPharmacyData = useCallback(async () => {
     if (!id) return;
     setIsLoading(true);
     try {
       const data = await pharmacyApi.getPharmacyById(id);
-      console.log('Pharmacy data:', data);
-      console.log('Medicines:', data?.medicines);
-      console.log('Is array?', Array.isArray(data?.medicines));
       setPharmacy(data);
 
       if (isAuthenticated && user?.id) {
@@ -83,32 +78,27 @@ export const PharmacyDetails: React.FC = () => {
     }
   }, [id, isAuthenticated, user?.id, navigate]);
 
-const loadReviews = useCallback(async () => {
-  if (!id) return;
-  try {
-    // ✅ FIXED: Now the API returns { reviews: [], pagination: {} }
-    const response = await reviewApi.getPharmacyReviews(id, {
-      page: reviewPage,
-      limit: 6,
-      sortBy,
-    });
-    
-    console.log('Reviews response:', response);
-    
-    // ✅ Use response.reviews (not response.data)
-    setReviews(response.reviews || []);
-    
-    if (response.pagination) {
-      setReviewTotalPages(response.pagination.pages || 1);
+  const loadReviews = useCallback(async () => {
+    if (!id) return;
+    try {
+      const response = await reviewApi.getPharmacyReviews(id, {
+        page: reviewPage,
+        limit: 6,
+        sortBy,
+      });
+      
+      setReviews(response.reviews || []);
+      
+      if (response.pagination) {
+        setReviewTotalPages(response.pagination.pages || 1);
+      }
+    } catch (error) {
+      console.error('Failed to fetch reviews:', error);
+      setReviews([]);
+      setReviewTotalPages(1);
     }
-  } catch (error) {
-    console.error('Failed to fetch reviews:', error);
-    setReviews([]);
-    setReviewTotalPages(1);
-  }
-}, [id, reviewPage, sortBy]);
+  }, [id, reviewPage, sortBy]);
 
-  // ✅ FIXED: Only call once on mount
   useEffect(() => {
     if (!hasLoaded.current) {
       hasLoaded.current = true;
@@ -229,7 +219,7 @@ const loadReviews = useCallback(async () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <LoadingSpinner />
       </div>
     );
@@ -237,22 +227,22 @@ const loadReviews = useCallback(async () => {
 
   if (!pharmacy) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 mb-4 text-lg">Pharmacy not found</p>
-        <Button onClick={() => navigate('/pharmacies')}>
-          <FaArrowLeft className="mr-2" />
-          Back to Pharmacies
-        </Button>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-gray-500 mb-4 text-lg">Pharmacy not found</p>
+          <Button onClick={() => navigate('/pharmacies')}>
+            <FaArrowLeft className="mr-2" />
+            Back to Pharmacies
+          </Button>
+        </div>
       </div>
     );
   }
 
-  // ✅ FIXED: Safely handle medicines array with Array.isArray check
   const medicinesArray = Array.isArray(pharmacy.medicines)
     ? pharmacy.medicines
     : [];
 
-  // ✅ FIXED: Properly typed with explicit type instead of any
   const medicineDetails: Record<string, MedicineDetail> = 
     medicinesArray.reduce((acc, med) => {
       acc[med.medicine._id] = {
@@ -267,7 +257,6 @@ const loadReviews = useCallback(async () => {
     pharmacy.openingHours &&
     Object.values(pharmacy.openingHours).some((val) => val && val.trim() !== '');
 
-  // ✅ FIXED: Map medicines using the safe array
   const mappedMedicines: Medicine[] = medicinesArray.map((m) => ({
     _id: m.medicine._id,
     name: m.medicine.name,
@@ -281,217 +270,220 @@ const loadReviews = useCallback(async () => {
   }));
 
   return (
-    <div className="space-y-8">
-      <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
-        <FaArrowLeft className="mr-2" />
-        Back
-      </Button>
+    // ✅ Added flex centering container
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-6xl w-full mx-auto space-y-8">
+        <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+          <FaArrowLeft className="mr-2" />
+          Back
+        </Button>
 
-      <div className="bg-white rounded-xl shadow-sm border border-[rgb(236,240,239)] overflow-hidden">
-        <div className="flex flex-col md:flex-row gap-6 p-6 md:p-8">
-          <img
-            src={pharmacy.image || 'https://via.placeholder.com/200'}
-            alt={pharmacy.name}
-            className="w-full md:w-56 h-56 object-cover rounded-xl shadow-sm"
-          />
-
-          <div className="flex-1">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h1 className="text-4xl font-bold text-[rgb(0,88,64)] mb-2 flex items-center gap-2">
-                  <FaStore className="w-6 h-6" />
-                  {pharmacy.name}
-                </h1>
-                <p className="text-gray-600 text-lg mb-1 flex items-center gap-2">
-                  <FaMapMarkerAlt className="w-4 h-4" />
-                  {pharmacy.address}
-                </p>
-                <p className="text-gray-600 flex items-center gap-2">
-                  <FaPhone className="w-4 h-4" />
-                  {pharmacy.phone}
-                </p>
-              </div>
-              <Badge variant={pharmacy.isActive ? 'success' : 'danger'}>
-                {pharmacy.isActive ? 'Open' : 'Closed'}
-              </Badge>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center gap-6 mt-4 pt-4 border-t border-[rgb(236,240,239)]">
-              <div>
-                <RatingStars rating={pharmacy.rating} count={pharmacy.totalReviews} />
-                <p className="text-sm text-gray-500 mt-1">
-                  Based on {pharmacy.totalReviews} reviews
-                </p>
-              </div>
-              {pharmacy.website && (
-                <div>
-                  <p className="text-sm text-gray-600 font-medium mb-1 flex items-center gap-1">
-                    <FaGlobe className="w-3 h-3" />
-                    Website
-                  </p>
-                  <a
-                    href={pharmacy.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[rgb(0,88,64)] hover:text-[rgb(0,70,50)] hover:underline text-sm"
-                  >
-                    {pharmacy.website}
-                  </a>
-                </div>
-              )}
-            </div>
-
-            {hasOpeningHours && (
-              <div className="mt-4 pt-4 border-t border-[rgb(236,240,239)]">
-                <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <FaClock className="w-4 h-4" />
-                  Opening Hours:
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-gray-600">
-                  {pharmacy.openingHours &&
-                    Object.entries(pharmacy.openingHours).map(([day, hours]) => {
-                      if (!hours || hours.trim() === '') return null;
-                      return (
-                        <div key={day}>
-                          <span className="font-medium capitalize">{day}:</span> {hours}
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Medicines Section */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-[rgb(0,88,64)] flex items-center gap-2">
-            <FaPills className="w-5 h-5" />
-            Available Medicines ({medicinesArray.length})
-          </h2>
-        </div>
-        {mappedMedicines.length > 0 ? (
-          <MedicineList
-            medicines={mappedMedicines}
-            showPrice={true}
-            showAddButton={true}
-            onAddToCart={handleAddToCart}
-            pharmacyId={id}
-            pharmacyName={pharmacy.name}
-            medicineDetails={medicineDetails}
-          />
-        ) : (
-          <div className="text-center py-8 bg-white rounded-xl shadow-sm border border-[rgb(236,240,239)]">
-            <p className="text-gray-500">No medicines available at this pharmacy yet.</p>
-          </div>
-        )}
-      </div>
-
-      {/* Reviews Section */}
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-[rgb(0,88,64)] mb-1 flex items-center gap-2">
-              <FaStar className="w-5 h-5" />
-              Customer Reviews
-            </h2>
-            <p className="text-sm text-gray-600">
-              {reviews.length === 0
-                ? 'No reviews yet'
-                : `Showing ${reviews.length} review${reviews.length !== 1 ? 's' : ''}`}
-            </p>
-          </div>
-          <Button
-            onClick={() => setIsReviewModalOpen(true)}
-            disabled={!isAuthenticated || !pharmacy.isActive}
-          >
-            <FaEdit className="mr-2" />
-            {userReview ? 'Edit Review' : 'Leave Review'}
-          </Button>
-        </div>
-
-        <ReviewsList
-          reviews={reviews}
-          isLoading={isLoading}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          onDelete={handleDeleteReview}
-          onUpdate={handleUpdateReview}
-          canDeleteAny={user?.role === 'admin'}
-          canEditOwn={isAuthenticated}
-          currentUserId={user?.id}
-          page={reviewPage}
-          totalPages={reviewTotalPages}
-          onPageChange={setReviewPage}
-        />
-      </div>
-
-      {/* Review Modal */}
-      <Modal
-        isOpen={isReviewModalOpen}
-        title={userReview ? 'Edit Your Review' : 'Leave a Review'}
-        onClose={() => {
-          setIsReviewModalOpen(false);
-          setReviewComment('');
-          setReviewRating(5);
-        }}
-        onConfirm={handleSubmitReview}
-        confirmText={userReview ? 'Update Review' : 'Submit Review'}
-        isLoading={isSubmittingReview}
-      >
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              How would you rate this pharmacy?
-            </label>
-            <div className="inline-block">
-              <RatingStars
-                rating={reviewRating}
-                onRate={setReviewRating}
-                interactive={true}
-                size="lg"
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              {reviewRating === 1 && 'Poor experience'}
-              {reviewRating === 2 && 'Not great'}
-              {reviewRating === 3 && 'Average'}
-              {reviewRating === 4 && 'Good experience'}
-              {reviewRating === 5 && 'Excellent experience'}
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Share your experience
-            </label>
-            <textarea
-              value={reviewComment}
-              onChange={(e) => setReviewComment(e.target.value.slice(0, 500))}
-              placeholder="Tell us about your visit, service quality, product availability, etc..."
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[rgb(0,88,64)] focus:border-transparent transition-all duration-200 resize-none"
-              rows={5}
+        <div className="bg-white rounded-xl shadow-sm border border-[rgb(236,240,239)] overflow-hidden">
+          <div className="flex flex-col md:flex-row gap-6 p-6 md:p-8">
+            <img
+              src={pharmacy.image || 'https://via.placeholder.com/200'}
+              alt={pharmacy.name}
+              className="w-full md:w-56 h-56 object-cover rounded-xl shadow-sm"
             />
-            <div className="flex justify-between items-center mt-2">
-              <p className="text-xs text-gray-500">
-                {reviewComment.length}/500 characters
-              </p>
-              {reviewComment.length > 450 && (
-                <p className="text-xs text-yellow-600">Getting close to the limit</p>
+
+            <div className="flex-1">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h1 className="text-4xl font-bold text-[rgb(0,88,64)] mb-2 flex items-center gap-2">
+                    <FaStore className="w-6 h-6" />
+                    {pharmacy.name}
+                  </h1>
+                  <p className="text-gray-600 text-lg mb-1 flex items-center gap-2">
+                    <FaMapMarkerAlt className="w-4 h-4" />
+                    {pharmacy.address}
+                  </p>
+                  <p className="text-gray-600 flex items-center gap-2">
+                    <FaPhone className="w-4 h-4" />
+                    {pharmacy.phone}
+                  </p>
+                </div>
+                <Badge variant={pharmacy.isActive ? 'success' : 'danger'}>
+                  {pharmacy.isActive ? 'Open' : 'Closed'}
+                </Badge>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center gap-6 mt-4 pt-4 border-t border-[rgb(236,240,239)]">
+                <div>
+                  <RatingStars rating={pharmacy.rating} count={pharmacy.totalReviews} />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Based on {pharmacy.totalReviews} reviews
+                  </p>
+                </div>
+                {pharmacy.website && (
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium mb-1 flex items-center gap-1">
+                      <FaGlobe className="w-3 h-3" />
+                      Website
+                    </p>
+                    <a
+                      href={pharmacy.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[rgb(0,88,64)] hover:text-[rgb(0,70,50)] hover:underline text-sm"
+                    >
+                      {pharmacy.website}
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {hasOpeningHours && (
+                <div className="mt-4 pt-4 border-t border-[rgb(236,240,239)]">
+                  <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <FaClock className="w-4 h-4" />
+                    Opening Hours:
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-gray-600">
+                    {pharmacy.openingHours &&
+                      Object.entries(pharmacy.openingHours).map(([day, hours]) => {
+                        if (!hours || hours.trim() === '') return null;
+                        return (
+                          <div key={day}>
+                            <span className="font-medium capitalize">{day}:</span> {hours}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
               )}
             </div>
           </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-xs text-blue-700 flex items-center gap-2">
-              <FaCalendarAlt className="w-3 h-3" />
-              <span><span className="font-medium">Tip:</span> Be honest and constructive. Your review helps others make informed decisions.</span>
-            </p>
-          </div>
         </div>
-      </Modal>
+
+        {/* Medicines Section */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-[rgb(0,88,64)] flex items-center gap-2">
+              <FaPills className="w-5 h-5" />
+              Available Medicines ({medicinesArray.length})
+            </h2>
+          </div>
+          {mappedMedicines.length > 0 ? (
+            <MedicineList
+              medicines={mappedMedicines}
+              showPrice={true}
+              showAddButton={true}
+              onAddToCart={handleAddToCart}
+              pharmacyId={id}
+              pharmacyName={pharmacy.name}
+              medicineDetails={medicineDetails}
+            />
+          ) : (
+            <div className="text-center py-8 bg-white rounded-xl shadow-sm border border-[rgb(236,240,239)]">
+              <p className="text-gray-500">No medicines available at this pharmacy yet.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Reviews Section */}
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-[rgb(0,88,64)] mb-1 flex items-center gap-2">
+                <FaStar className="w-5 h-5" />
+                Customer Reviews
+              </h2>
+              <p className="text-sm text-gray-600">
+                {reviews.length === 0
+                  ? 'No reviews yet'
+                  : `Showing ${reviews.length} review${reviews.length !== 1 ? 's' : ''}`}
+              </p>
+            </div>
+            <Button
+              onClick={() => setIsReviewModalOpen(true)}
+              disabled={!isAuthenticated || !pharmacy.isActive}
+            >
+              <FaEdit className="mr-2" />
+              {userReview ? 'Edit Review' : 'Leave Review'}
+            </Button>
+          </div>
+
+          <ReviewsList
+            reviews={reviews}
+            isLoading={isLoading}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            onDelete={handleDeleteReview}
+            onUpdate={handleUpdateReview}
+            canDeleteAny={user?.role === 'admin'}
+            canEditOwn={isAuthenticated}
+            currentUserId={user?.id}
+            page={reviewPage}
+            totalPages={reviewTotalPages}
+            onPageChange={setReviewPage}
+          />
+        </div>
+
+        {/* Review Modal */}
+        <Modal
+          isOpen={isReviewModalOpen}
+          title={userReview ? 'Edit Your Review' : 'Leave a Review'}
+          onClose={() => {
+            setIsReviewModalOpen(false);
+            setReviewComment('');
+            setReviewRating(5);
+          }}
+          onConfirm={handleSubmitReview}
+          confirmText={userReview ? 'Update Review' : 'Submit Review'}
+          isLoading={isSubmittingReview}
+        >
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                How would you rate this pharmacy?
+              </label>
+              <div className="inline-block">
+                <RatingStars
+                  rating={reviewRating}
+                  onRate={setReviewRating}
+                  interactive={true}
+                  size="lg"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {reviewRating === 1 && 'Poor experience'}
+                {reviewRating === 2 && 'Not great'}
+                {reviewRating === 3 && 'Average'}
+                {reviewRating === 4 && 'Good experience'}
+                {reviewRating === 5 && 'Excellent experience'}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Share your experience
+              </label>
+              <textarea
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value.slice(0, 500))}
+                placeholder="Tell us about your visit, service quality, product availability, etc..."
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[rgb(0,88,64)] focus:border-transparent transition-all duration-200 resize-none"
+                rows={5}
+              />
+              <div className="flex justify-between items-center mt-2">
+                <p className="text-xs text-gray-500">
+                  {reviewComment.length}/500 characters
+                </p>
+                {reviewComment.length > 450 && (
+                  <p className="text-xs text-yellow-600">Getting close to the limit</p>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-xs text-blue-700 flex items-center gap-2">
+                <FaCalendarAlt className="w-3 h-3" />
+                <span><span className="font-medium">Tip:</span> Be honest and constructive. Your review helps others make informed decisions.</span>
+              </p>
+            </div>
+          </div>
+        </Modal>
+      </div>
     </div>
   );
 };

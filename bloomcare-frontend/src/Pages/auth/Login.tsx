@@ -30,6 +30,7 @@ export const Login: React.FC = () => {
         resolver: zodResolver(loginSchema),
     });
 
+    // bloomcare-frontend/src/Pages/auth/Login.tsx - Update the onSubmit
     const onSubmit = async (data: LoginForm) => {
         setIsLoading(true);
         try {
@@ -43,16 +44,16 @@ export const Login: React.FC = () => {
                 const { accessToken, refreshToken, user } = response.data;
                 login(user, accessToken, refreshToken);
                 toast.success('Login successful!');
-                navigate('/');
-            }
-        } catch (error: unknown) {
-            const err = error as { response?: { data?: { message?: string } } };
-            const message = err.response?.data?.message || 'Login failed. Please try again.';
-            toast.error(message);
-        } finally {
-            setIsLoading(false);
+            navigate('/medicines'); // Redirect to medicines page
         }
-    };
+    } catch (error: unknown) {
+        const err = error as { response?: { data?: { message?: string } } };
+        const message = err.response?.data?.message || 'Login failed. Please try again.';
+        toast.error(message);
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center">

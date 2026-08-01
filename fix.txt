@@ -1,88 +1,97 @@
-# 📊 **Error Summary**
+// bloomcare-frontend/src/Pages/Landing.tsx
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
+import { Button } from '../components/common/Button';
+import { FaPills, FaStore, FaArrowRight, FaHeart } from 'react-icons/fa';
 
-## **Total Files with Errors: 27 files**
-## **Total Error Count: 128+ TypeScript Errors**
+export const Landing: React.FC = () => {
+  const { isAuthenticated } = useAuthStore();
 
----
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-white">
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-[#22c55e] rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#22c55e] rounded-full blur-3xl" />
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Left Column */}
+            <div>
+              <div className="inline-flex items-center gap-2 bg-[#22c55e]/10 px-4 py-2 rounded-xl text-sm mb-6">
+                <span className="text-[#22c55e] font-medium">Your Health, Our Priority</span>
+              </div>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-black">
+                Get Your <br />
+                <span className="text-[#22c55e]">Medicines</span> Delivered
+              </h1>
+              <p className="text-lg text-gray-600 mb-8 max-w-lg">
+                Order medicines online from trusted pharmacies. Fast delivery, secure payments, and genuine products.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                {!isAuthenticated ? (
+                  <Link to="/register">
+                    <Button size="lg" className="bg-[#22c55e] text-white hover:bg-[#16a34a]">
+                      Get Started <FaArrowRight className="ml-2" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link to="/dashboard">
+                    <Button size="lg" className="bg-[#22c55e] text-white hover:bg-[#16a34a]">
+                      Go to Dashboard <FaArrowRight className="ml-2" />
+                    </Button>
+                  </Link>
+                )}
+                <Link to="/pharmacies">
+                  <Button size="lg" variant="outline" className="border-[#22c55e] text-[#22c55e]">
+                    Browse Pharmacies
+                  </Button>
+                </Link>
+              </div>
+              <div className="mt-8 flex items-center gap-6 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <FaStore className="w-4 h-4 text-[#22c55e]" />
+                  <span>500+ Pharmacies</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <FaPills className="w-4 h-4 text-[#22c55e]" />
+                  <span>10K+ Medicines</span>
+                </div>
+              </div>
+            </div>
 
-## **Breakdown by Folder:**
+            {/* Right Column - Simple Feature Cards */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm hover:shadow-lg transition-shadow">
+                <FaPills className="w-8 h-8 text-[#22c55e] mx-auto mb-3" />
+                <p className="font-medium text-black">Order Medicines</p>
+              </div>
+              <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm hover:shadow-lg transition-shadow">
+                <FaStore className="w-8 h-8 text-[#22c55e] mx-auto mb-3" />
+                <p className="font-medium text-black">Find Pharmacy</p>
+              </div>
+              <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm hover:shadow-lg transition-shadow">
+                <FaHeart className="w-8 h-8 text-[#22c55e] mx-auto mb-3" />
+                <p className="font-medium text-black">Health Tips</p>
+              </div>
+              <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm hover:shadow-lg transition-shadow">
+                <FaArrowRight className="w-8 h-8 text-[#22c55e] mx-auto mb-3" />
+                <p className="font-medium text-black">Fast Delivery</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-### **src/app.ts** (5 errors)
-- Missing express types
-- Missing cors types  
-- Missing morgan types
-- Missing parameter types
-
-### **src/config/** (1 error)
-- `stripe.ts` - Wrong API version
-
-### **src/controllers/** (12 files with 63 errors)
-1. `adminController.ts` - 3 errors
-2. `aiController.ts` - 3 errors
-3. `authController.ts` - 6 errors
-4. `medicineController.ts` - 7 errors
-5. `notificationController.ts` - 10 errors
-6. `orderController.ts` - 9 errors
-7. `paymentController.ts` - 6 errors
-8. `pharmacyController.ts` - 4 errors
-9. `reviewController.ts` - 7 errors
-10. `webhookController.ts` - 3 errors
-
-### **src/middleware/** (3 files with 4 errors)
-1. `authMiddleware.ts` - 2 errors
-2. `uploadMiddleware.ts` - 1 error
-3. `validateMiddleware.ts` - 1 error
-
-### **src/routes/** (9 files with 9 errors)
-All route files - 1 error each (missing express types)
-
-### **src/services/** (3 files with 32+ errors)
-1. `authService.ts` - 2 errors
-2. `orderService.ts` - **20+ errors** ⚠️ (CRITICAL)
-3. `pharmacyService.ts` - **10+ errors** ⚠️ (CRITICAL)
-
----
-
-## **Error Categories:**
-
-| Category | Count | Priority |
-|----------|-------|----------|
-| **Type Definition Missing** | ~50+ | 🔴 CRITICAL |
-| **AuthRequest Missing Properties** | ~40+ | 🔴 CRITICAL |
-| **Mongoose Query Type Errors** | ~20+ | 🔴 CRITICAL |
-| **Property Not Found on Types** | ~10+ | 🟠 HIGH |
-| **API Version Mismatch** | 1 | 🟢 LOW |
-| **Missing Methods** | 2 | 🟠 HIGH |
-
----
-
-## **Most Critical Files** 🚨
-
-1. **orderService.ts** - 20+ errors (Mongoose query issues)
-2. **pharmacyService.ts** - 10+ errors (Mongoose + ObjectId issues)
-3. **All controllers** - Missing Express property types (affects 12 files)
-4. **authMiddleware.ts** - Base interface broken (cascades to all controllers)
-
----
-
-## **Root Causes:**
-
-1. ❌ **AuthRequest interface incomplete** → Affects 20+ files
-2. ❌ **Missing @types packages or tsconfig issue** → Affects 20+ files  
-3. ❌ **Mongoose 9.x strict typing** → Affects 2 files heavily
-4. ❌ **Stripe API version mismatch** → 1 file
-
----
-
-## **Good News** ✅
-
-**Most errors are NOT code logic errors** - they're just TypeScript type/declaration issues. Once we fix:
-
-1. ✅ `authMiddleware.ts` (AuthRequest interface)
-2. ✅ `tsconfig.json` (type resolution)
-3. ✅ `orderService.ts` & `pharmacyService.ts` (Mongoose queries)
-4. ✅ `stripe.ts` (API version)
-
-**All other files will compile!** 🎉
-
-The fixes I provided earlier target all these root causes. Once applied, you should have **0 errors**.
+      {/* Simple Footer */}
+      <footer className="bg-gray-50 border-t border-gray-200 py-8">
+        <div className="max-w-7xl mx-auto px-4 text-center text-gray-600">
+          <p>&copy; 2026 BloomCare. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
+  );
+};

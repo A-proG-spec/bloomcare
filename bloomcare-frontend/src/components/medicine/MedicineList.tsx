@@ -1,5 +1,4 @@
-// src/components/medicine/MedicineList.tsx
-
+// bloomcare-frontend/src/components/medicine/MedicineList.tsx
 import React from 'react';
 import type { Medicine } from '../../api/types';
 import { MedicineCard } from './MedicineCard';
@@ -29,16 +28,7 @@ export const MedicineList: React.FC<MedicineListProps> = ({
   onAddToCart,
   medicineDetails,
 }) => {
-  // ✅ DEBUG: Log what we're receiving
-  console.log('MedicineList received medicines:', medicines);
-  console.log('MedicineList type of medicines:', typeof medicines);
-  console.log('MedicineList is array?', Array.isArray(medicines));
-
-  // ✅ FIX: Always ensure medicines is an array
   const safeMedicines = Array.isArray(medicines) ? medicines : [];
-
-  console.log('MedicineList safeMedicines:', safeMedicines);
-  console.log('MedicineList safeMedicines length:', safeMedicines.length);
 
   if (isLoading) {
     return (
@@ -58,7 +48,7 @@ export const MedicineList: React.FC<MedicineListProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-4">
       {safeMedicines.map((medicine) => {
         const details = medicineDetails?.[medicine._id];
         return (

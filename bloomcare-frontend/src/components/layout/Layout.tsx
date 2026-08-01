@@ -1,17 +1,22 @@
 import React from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, Navigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/authStore';
 import { Navbar } from './Navbar';
 
 export const Layout: React.FC = () => {
+  const { isAuthenticated } = useAuthStore();
   const location = useLocation();
-  // Pages that should take full width (no max-width/padding)
-  const fullWidthPages = ['/', '/pharmacies'];
-  const isFullWidth = fullWidthPages.includes(location.pathname);
+  
+  // If authenticated and trying to access root, redirect to medicines
+  if (isAuthenticated && location.pathname === '/') {
+    return <Navigate to="/medicines" replace />;
+  }
 
+  // For all users - show navbar
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Navbar />
-      <main className={`flex-grow w-full ${isFullWidth ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'}`}>
+      <main className="flex-grow w-full">
         <Outlet />
       </main>
     </div>

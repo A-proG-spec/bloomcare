@@ -1,40 +1,29 @@
-import React, { useState, useEffect } from 'react';
+// bloomcare-frontend/src/components/layout/Navbar.tsx
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { useUIStore } from '../../store/uiStore';
 import { useCartStore } from '../../store/cartStore';
-import { useApplicationStore } from '../../store/applicationStore';
-import { usePharmacyStore } from '../../store/pharmacyStore';
 import { Button } from '../common/Button';
 import { NotificationBell } from '../notification/NotificationBell';
 import { 
-  FaShoppingCart, 
-  FaSearch, 
-  FaUser, 
-  FaSignOutAlt, 
   FaBars, 
   FaTimes, 
   FaStore, 
   FaPills, 
-  FaUserMd,
-  // ✅ REMOVED: FaHome
+  FaShoppingCart, 
+  FaUser, 
+  FaSignOutAlt,
+  FaBox,
+  FaClipboardList
 } from 'react-icons/fa';
 
 export const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
-  const { openSearch } = useUIStore();
   const { getCartCount } = useCartStore();
-  const { myApplication, fetchMyApplication } = useApplicationStore();
-  const { fetchPharmacy } = usePharmacyStore();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchMyApplication();
-      fetchPharmacy();
-    }
-  }, [isAuthenticated, fetchMyApplication, fetchPharmacy]);
+  const cartCount = getCartCount();
 
   const handleLogout = async () => {
     await logout();
@@ -42,61 +31,64 @@ export const Navbar: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
-  const cartCount = getCartCount();
-  const isAdmin = user?.role === 'admin';
-  const isPharmacyOwner = user?.role === 'pharmacy_owner';
-  
-  const hasPendingApplication = myApplication?.status === 'pending';
-  const hasRejectedApplication = myApplication?.status === 'rejected';
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
 
   return (
     <nav className="bg-white border-b border-gray-200 shadow-sm relative z-50 w-full">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 lg:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-            <span className="text-2xl font-bold text-black font-outfit">Bloom<span className="text-[#22c55e]">Care</span></span>
+          <Link to={isAuthenticated ? '/medicines' : '/'} className="flex items-center gap-2" onClick={closeMobileMenu}>
+            <span className="text-2xl font-bold text-black">
+              Bloom<span className="text-[#22c55e]">Care</span>
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <Link to="/pharmacies" className="text-gray-600 hover:text-[#22c55e] font-medium transition-colors font-outfit">
+            <Link to="/pharmacies" className="text-gray-600 hover:text-[#22c55e] font-medium transition-colors">
               Pharmacies
             </Link>
-            <Link to="/medicines" className="text-gray-600 hover:text-[#22c55e] font-medium transition-colors font-outfit">
+            <Link to="/medicines" className="text-gray-600 hover:text-[#22c55e] font-medium transition-colors">
               Medicines
             </Link>
-            {isPharmacyOwner && (
+            {isAuthenticated && (
               <>
-                <Link to="/my-pharmacy" className="text-gray-600 hover:text-[#22c55e] font-medium transition-colors font-outfit">
-                  My Pharmacy
+                <Link to="/orders" className="text-gray-600 hover:text-[#22c55e] font-medium transition-colors">
+                  Orders
                 </Link>
-                <Link to="/pharmacy-inventory" className="text-gray-600 hover:text-[#22c55e] font-medium transition-colors font-outfit">
-                  Inventory
-                </Link>
+                {user?.role === 'pharmacy_owner' && (
+                  <>
+                    <Link to="/my-pharmacy" className="text-gray-600 hover:text-[#22c55e] font-medium transition-colors">
+                      My Pharmacy
+                    </Link>
+                    <Link to="/inventory" className="text-gray-600 hover:text-[#22c55e] font-medium transition-colors">
+                      Inventory
+                    </Link>
+                  </>
+                )}
+                {user?.role === 'admin' && (
+                  <Link to="/admin" className="text-gray-600 hover:text-[#22c55e] font-medium transition-colors">
+                    Admin
+                  </Link>
+                )}
+                {user?.role === 'user' && (
+                  <Link to="/apply-pharmacy" className="text-gray-600 hover:text-[#22c55e] font-medium transition-colors">
+                    Apply Pharmacy
+                  </Link>
+                )}
               </>
-            )}
-            {isAdmin && (
-              <Link to="/admin" className="text-gray-600 hover:text-[#22c55e] font-medium transition-colors font-outfit">
-                Admin
-              </Link>
             )}
           </div>
 
           {/* Right side */}
           <div className="flex items-center gap-3">
-            {/* Mobile search icon */}
-            <button
-              onClick={openSearch}
-              className="md:hidden p-2 text-gray-600 hover:text-[#22c55e] hover:bg-gray-100 rounded-xl transition-colors"
-              aria-label="Search"
-            >
-              <FaSearch className="w-5 h-5" />
-            </button>
-
-            {/* Cart Icon - Only when authenticated */}
             {isAuthenticated && (
               <Link to="/cart" className="relative p-2 text-gray-600 hover:text-[#22c55e] hover:bg-gray-100 rounded-xl transition-colors hidden sm:block">
                 <FaShoppingCart className="w-5 h-5" />
@@ -111,30 +103,10 @@ export const Navbar: React.FC = () => {
             {isAuthenticated ? (
               <>
                 <NotificationBell />
-                <Link to="/profile" className="hidden sm:flex items-center gap-2 text-gray-600 hover:text-[#22c55e] font-medium transition-colors font-outfit">
+                <Link to="/profile" className="hidden sm:flex items-center gap-2 text-gray-600 hover:text-[#22c55e] font-medium transition-colors">
                   <FaUser className="w-4 h-4" />
                   <span className="text-sm hidden lg:inline">{user?.fullName}</span>
                 </Link>
-                <Link to="/orders" className="hidden sm:block text-gray-600 hover:text-[#22c55e] font-medium transition-colors font-outfit">
-                  Orders
-                </Link>
-                {!isPharmacyOwner && !isAdmin && (
-                  <Link to="/my-application" className="hidden sm:block">
-                    {hasPendingApplication ? (
-                      <span className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-xl text-xs font-medium font-outfit">
-                        Pending
-                      </span>
-                    ) : hasRejectedApplication ? (
-                      <span className="px-3 py-1.5 bg-red-100 text-red-700 rounded-xl text-xs font-medium font-outfit">
-                        Rejected
-                      </span>
-                    ) : (
-                      <Button variant="outline" size="sm">
-                        Apply
-                      </Button>
-                    )}
-                  </Link>
-                )}
                 <Button variant="outline" size="sm" onClick={handleLogout} icon={<FaSignOutAlt className="w-4 h-4" />}>
                   Logout
                 </Button>
@@ -150,7 +122,7 @@ export const Navbar: React.FC = () => {
               </>
             )}
 
-            {/* Hamburger menu button */}
+            {/* Hamburger Menu Button - Mobile */}
             <button
               onClick={toggleMobileMenu}
               className="md:hidden p-2 text-gray-600 hover:text-[#22c55e] hover:bg-gray-100 rounded-xl transition-colors"
@@ -166,33 +138,31 @@ export const Navbar: React.FC = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-200 shadow-lg absolute top-16 left-0 right-0 z-40">
           <div className="px-4 py-4 space-y-1">
+            <MobileNavLink to="/pharmacies" icon={<FaStore className="w-5 h-5" />} label="Pharmacies" onClick={closeMobileMenu} />
+            <MobileNavLink to="/medicines" icon={<FaPills className="w-5 h-5" />} label="Medicines" onClick={closeMobileMenu} />
+            
             {isAuthenticated ? (
               <>
-                <MobileNavLink to="/pharmacies" icon={<FaStore />} label="Pharmacies" onClick={() => setIsMobileMenuOpen(false)} />
-                <MobileNavLink to="/medicines" icon={<FaPills />} label="Medicines" onClick={() => setIsMobileMenuOpen(false)} />
-                {isPharmacyOwner && (
+                <MobileNavLink to="/orders" icon={<FaBox className="w-5 h-5" />} label="Orders" onClick={closeMobileMenu} />
+                <MobileNavLink to="/cart" icon={<FaShoppingCart className="w-5 h-5" />} label={`Cart (${cartCount})`} onClick={closeMobileMenu} />
+                <MobileNavLink to="/profile" icon={<FaUser className="w-5 h-5" />} label="Profile" onClick={closeMobileMenu} />
+                
+                {user?.role === 'pharmacy_owner' && (
                   <>
-                    <MobileNavLink to="/my-pharmacy" icon={<FaStore />} label="My Pharmacy" onClick={() => setIsMobileMenuOpen(false)} />
-                    <MobileNavLink to="/pharmacy-inventory" icon={<FaPills />} label="Inventory" onClick={() => setIsMobileMenuOpen(false)} />
+                    <MobileNavLink to="/my-pharmacy" icon={<FaStore className="w-5 h-5" />} label="My Pharmacy" onClick={closeMobileMenu} />
+                    <MobileNavLink to="/inventory" icon={<FaPills className="w-5 h-5" />} label="Inventory" onClick={closeMobileMenu} />
                   </>
                 )}
-                {isAdmin && (
-                  <MobileNavLink to="/admin" icon={<FaUserMd />} label="Admin Dashboard" onClick={() => setIsMobileMenuOpen(false)} />
+                {user?.role === 'admin' && (
+                  <MobileNavLink to="/admin" icon={<FaUser className="w-5 h-5" />} label="Admin Panel" onClick={closeMobileMenu} />
                 )}
-                <MobileNavLink to="/profile" icon={<FaUser />} label="Profile" onClick={() => setIsMobileMenuOpen(false)} />
-                <MobileNavLink to="/orders" icon={<FaShoppingCart />} label="Orders" onClick={() => setIsMobileMenuOpen(false)} />
-                <MobileNavLink to="/cart" icon={<FaShoppingCart />} label={`Cart ${cartCount > 0 ? `(${cartCount})` : ''}`} onClick={() => setIsMobileMenuOpen(false)} />
-                {!isPharmacyOwner && !isAdmin && (
-                  <MobileNavLink 
-                    to="/my-application" 
-                    icon={<FaUserMd />} 
-                    label={hasPendingApplication ? 'Application Pending' : hasRejectedApplication ? 'Application Rejected' : 'Apply for Pharmacy'} 
-                    onClick={() => setIsMobileMenuOpen(false)} 
-                  />
+                {user?.role === 'user' && (
+                  <MobileNavLink to="/apply-pharmacy" icon={<FaClipboardList className="w-5 h-5" />} label="Apply Pharmacy" onClick={closeMobileMenu} />
                 )}
+                
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors font-outfit"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                 >
                   <FaSignOutAlt className="w-5 h-5" />
                   <span className="font-medium">Logout</span>
@@ -200,10 +170,8 @@ export const Navbar: React.FC = () => {
               </>
             ) : (
               <>
-                <MobileNavLink to="/pharmacies" icon={<FaStore />} label="Pharmacies" onClick={() => setIsMobileMenuOpen(false)} />
-                <MobileNavLink to="/medicines" icon={<FaPills />} label="Medicines" onClick={() => setIsMobileMenuOpen(false)} />
-                <MobileNavLink to="/login" icon={<FaUser />} label="Login" onClick={() => setIsMobileMenuOpen(false)} />
-                <MobileNavLink to="/register" icon={<FaUserMd />} label="Register" onClick={() => setIsMobileMenuOpen(false)} />
+                <MobileNavLink to="/login" icon={<FaUser className="w-5 h-5" />} label="Login" onClick={closeMobileMenu} />
+                <MobileNavLink to="/register" icon={<FaUser className="w-5 h-5" />} label="Register" onClick={closeMobileMenu} />
               </>
             )}
           </div>
@@ -222,7 +190,7 @@ const MobileNavLink: React.FC<{
 }> = ({ to, icon, label, onClick }) => (
   <Link
     to={to}
-    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-[#22c55e] hover:bg-gray-100 rounded-xl transition-colors font-outfit"
+    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-[#22c55e] hover:bg-gray-100 rounded-xl transition-colors"
     onClick={onClick}
   >
     <span className="text-gray-500">{icon}</span>

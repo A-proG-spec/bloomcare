@@ -1,8 +1,9 @@
+// bloomcare-frontend/src/store/authStore.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '../api/types';
 import { authApi } from '../api/endpoints/auth';
-import { useCartStore } from './cartStore'; // ✅ Import cart store
+import { useCartStore } from './cartStore';
 
 interface AuthState {
   user: User | null;
@@ -41,12 +42,11 @@ export const useAuthStore = create<AuthState>()(
             await authApi.logout(refreshToken);
           }
         } catch (error) {
-          // Ignore errors on logout
+          console.log(error)
         }
         
-        // ✅ FIX: Clear cart on logout
+        // Clear cart on logout
         useCartStore.getState().clearCart();
-        // ✅ Also clear the persisted cart storage
         localStorage.removeItem('cart-storage');
         
         set({

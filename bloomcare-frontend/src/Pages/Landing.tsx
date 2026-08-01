@@ -3,19 +3,13 @@ import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { 
   FaPills, 
-  FaHospital, 
   FaStar, 
-  FaTruck, 
-  FaShieldAlt, 
-  FaCreditCard,
+  FaTruck,  
   FaArrowRight,
-  FaPrescription,
-  FaUserMd,
   FaSearch,
   FaShoppingCart,
   FaStore,
   FaUsers,
-  FaAward,
   FaRocket,
   FaFacebookF,
   FaTwitter,
@@ -33,9 +27,6 @@ export const Landing: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* ============================================================ */}
-      {/* HERO SECTION */}
-      {/* ============================================================ */}
       <section className="relative overflow-hidden bg-white">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-20 left-10 w-72 h-72 bg-[#22c55e] rounded-full blur-3xl" />
@@ -43,134 +34,64 @@ export const Landing: React.FC = () => {
         </div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            {/* Left Column - Text Content */}
-            <div>
-              <div className="inline-flex items-center gap-2 bg-[#22c55e]/10 px-4 py-2 rounded-xl text-sm mb-6">
-                <FaAward className="w-4 h-4 text-[#22c55e]" />
-                <span className="text-[#22c55e] font-medium font-outfit">Trusted Healthcare Platform</span>
-              </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 font-outfit text-black">
-                Your Health, <br />
-                <span className="text-[#22c55e]">Our Priority</span>
-              </h1>
-              <p className="text-lg text-gray-600 mb-8 max-w-lg font-outfit">
-                Order medicines online, find nearby pharmacies, and manage your health with ease. 
-                BloomCare connects you with trusted pharmacies at your fingertips.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                {/* Show different CTA based on authentication status */}
-                {!isAuthenticated ? (
-                  <Link to="/register">
-                    <Button 
-                      size="lg" 
-                      className="bg-[#22c55e] text-white hover:bg-[#16a34a] font-semibold"
-                      icon={<FaArrowRight className="w-4 h-4" />}
-                      iconPosition="right"
-                    >
-                      Get Started
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link to="/pharmacies">
-                    <Button 
-                      size="lg" 
-                      className="bg-[#22c55e] text-white hover:bg-[#16a34a] font-semibold"
-                      icon={<FaArrowRight className="w-4 h-4" />}
-                      iconPosition="right"
-                    >
-                      Find Pharmacies
-                    </Button>
-                  </Link>
-                )}
+          <div className="max-w-3xl mx-auto text-center">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 font-outfit text-black">
+              Your Health, <br />
+              <span className="text-[#22c55e]">Our Priority</span>
+            </h1>
+            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto font-outfit">
+              Order medicines online, find nearby pharmacies, and manage your health with ease. 
+              BloomCare connects you with trusted pharmacies at your fingertips.
+            </p>
+            <div className="flex flex-wrap gap-4 justify-center">
+              {/* Show different CTA based on authentication status */}
+              {!isAuthenticated ? (
+                <Link to="/register">
+                  <Button 
+                    size="lg" 
+                    className="bg-[#22c55e] text-white hover:bg-[#16a34a] font-semibold"
+                    icon={<FaArrowRight className="w-4 h-4" />}
+                    iconPosition="right"
+                  >
+                    Get Started
+                  </Button>
+                </Link>
+              ) : (
                 <Link to="/pharmacies">
                   <Button 
                     size="lg" 
-                    variant="outline" 
-                    className="border-[#22c55e] text-[#22c55e] hover:bg-[#22c55e]/5"
+                    className="bg-[#22c55e] text-white hover:bg-[#16a34a] font-semibold"
+                    icon={<FaArrowRight className="w-4 h-4" />}
+                    iconPosition="right"
                   >
-                    Browse Pharmacies
+                    Find Pharmacies
                   </Button>
                 </Link>
+              )}
+              <Link to="/pharmacies">
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-[#22c55e] text-[#22c55e] hover:bg-[#22c55e]/5"
+                >
+                  Browse Pharmacies
+                </Button>
+              </Link>
+            </div>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-600 font-outfit">
+              <div className="flex items-center gap-2">
+                <FaStore className="w-4 h-4 text-[#22c55e]" />
+                <span>500+ Pharmacies</span>
               </div>
-              <div className="mt-8 flex flex-wrap items-center gap-6 text-sm text-gray-600 font-outfit">
-                <div className="flex items-center gap-2">
-                  <FaStore className="w-4 h-4 text-[#22c55e]" />
-                  <span>500+ Pharmacies</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FaPills className="w-4 h-4 text-[#22c55e]" />
-                  <span>10K+ Medicines</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FaStar className="w-4 h-4 text-[#22c55e]" />
-                  <span>4.8 Rating</span>
-                </div>
+              <div className="flex items-center gap-2">
+                <FaPills className="w-4 h-4 text-[#22c55e]" />
+                <span>10K+ Medicines</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FaStar className="w-4 h-4 text-[#22c55e]" />
+                <span>4.8 Rating</span>
               </div>
             </div>
-
-            {/* Right Column - Feature Cards */}
-            <div className="relative">
-              <div className="bg-gray-50 rounded-xl p-8 border border-gray-200">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-xl p-6 text-center border border-gray-200 hover:border-[#22c55e]/30 transition-all duration-300">
-                    <FaPrescription className="w-8 h-8 text-[#22c55e] mx-auto mb-3" />
-                    <p className="text-sm font-medium font-outfit text-black">Order Medicines</p>
-                  </div>
-                  <div className="bg-white rounded-xl p-6 text-center border border-gray-200 hover:border-[#22c55e]/30 transition-all duration-300">
-                    <FaHospital className="w-8 h-8 text-[#22c55e] mx-auto mb-3" />
-                    <p className="text-sm font-medium font-outfit text-black">Find Pharmacy</p>
-                  </div>
-                  <div className="bg-white rounded-xl p-6 text-center border border-gray-200 hover:border-[#22c55e]/30 transition-all duration-300">
-                    <FaUserMd className="w-8 h-8 text-[#22c55e] mx-auto mb-3" />
-                    <p className="text-sm font-medium font-outfit text-black">Health Advice</p>
-                  </div>
-                  <div className="bg-white rounded-xl p-6 text-center border border-gray-200 hover:border-[#22c55e]/30 transition-all duration-300">
-                    <FaTruck className="w-8 h-8 text-[#22c55e] mx-auto mb-3" />
-                    <p className="text-sm font-medium font-outfit text-black">Fast Delivery</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================ */}
-      {/* FEATURES SECTION */}
-      {/* ============================================================ */}
-      <section className="py-16 md:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-black mb-4 font-outfit">
-              Why Choose <span className="text-[#22c55e]">BloomCare</span>
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto font-outfit">
-              We make healthcare accessible, affordable, and convenient for everyone
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <FeatureCard 
-              icon={<FaPills className="w-8 h-8" />}
-              title="Wide Selection"
-              description="Access thousands of medicines from verified pharmacies"
-            />
-            <FeatureCard 
-              icon={<FaTruck className="w-8 h-8" />}
-              title="Fast Delivery"
-              description="Get your medicines delivered to your doorstep quickly"
-            />
-            <FeatureCard 
-              icon={<FaShieldAlt className="w-8 h-8" />}
-              title="100% Authentic"
-              description="All medicines are sourced from licensed pharmacies"
-            />
-            <FeatureCard 
-              icon={<FaCreditCard className="w-8 h-8" />}
-              title="Secure Payment"
-              description="Multiple payment options with bank-grade security"
-            />
           </div>
         </div>
       </section>
@@ -296,24 +217,6 @@ export const Landing: React.FC = () => {
 // ============================================================
 // SUB-COMPONENTS
 // ============================================================
-
-interface FeatureCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}
-
-const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:border-[#22c55e]/30 transition-all duration-300 group">
-      <div className="w-14 h-14 rounded-xl bg-[#22c55e]/10 flex items-center justify-center mb-4 text-[#22c55e] group-hover:bg-[#22c55e] group-hover:text-white transition-all duration-300">
-        {icon}
-      </div>
-      <h3 className="text-lg font-semibold text-black mb-2 font-outfit">{title}</h3>
-      <p className="text-gray-600 text-sm font-outfit">{description}</p>
-    </div>
-  );
-};
 
 interface StepCardProps {
   number: string;
