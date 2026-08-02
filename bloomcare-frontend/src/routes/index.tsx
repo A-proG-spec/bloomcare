@@ -16,7 +16,7 @@ import { Profile } from '../Pages/profile/Profile';
 import { ChangePassword } from '../Pages/profile/ChangePassword';
 import { ApplyPharmacy } from '../Pages/pharmacy/ApplyPharmacy';
 import { Cart } from '../Pages/cart/Cart';
-import { Checkout } from '../Pages/cart/Checkout';  // ✅ Make sure this is imported
+import { Checkout } from '../Pages/cart/Checkout';
 import { MyApplication } from '../Pages/pharmacy/MyApplication';
 import { MyPharmacy } from '../Pages/pharmacy/MyPharmacy';
 import { EditPharmacy } from '../Pages/pharmacy/EditPharmacy';
@@ -41,7 +41,7 @@ export const router = createBrowserRouter([
       </ErrorBoundary>
     ),
     children: [
-      // ✅ PUBLIC ROUTES (No authentication required)
+      // ✅ PUBLIC ROUTES
       { index: true, element: <Landing /> },
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
@@ -50,39 +50,31 @@ export const router = createBrowserRouter([
       { path: 'pharmacy/:id', element: <PharmacyDetails /> },
       { path: 'medicines', element: <Medicines /> },
       { path: 'medicines/:id', element: <MedicineDetails /> },
-      
-      // ✅ Cart is public (anyone can view)
       { path: 'cart', element: <Cart /> },
-      
-      // ✅ Checkout - MUST be public OR inside PrivateRoute
-      // If you want it public (anyone can view, but login required to proceed):
       { path: 'checkout', element: <Checkout /> },
-      
-      // OR if you want it protected (only logged-in users):
-      // Move it inside PrivateRoute below
 
-      // ✅ PROTECTED ROUTES (Authentication required)
+      // ✅ PROTECTED ROUTES
       {
         element: <PrivateRoute />,
         children: [
-          // Profile routes
           { path: 'profile', element: <Profile /> },
           { path: 'profile/change-password', element: <ChangePassword /> },
-          
-          // Order routes
           { path: 'orders', element: <Orders /> },
           { path: 'orders/:id', element: <OrderDetails /> },
-          
-          // Pharmacy owner routes
           { path: 'apply-pharmacy', element: <ApplyPharmacy /> },
           { path: 'my-application', element: <MyApplication /> },
           { path: 'my-pharmacy', element: <MyPharmacy /> },
           { path: 'edit-pharmacy', element: <EditPharmacy /> },
+          
+          // ✅ Inventory Route - Use this URL
           { path: 'pharmacy-inventory', element: <PharmacyInventory /> },
+          
+          // ✅ Optional: Add alias for convenience
+          { path: 'inventory', element: <PharmacyInventory /> },
         ],
       },
 
-      // ✅ ADMIN ROUTES (Authentication + Admin role required)
+      // ✅ ADMIN ROUTES
       {
         element: <PrivateRoute />,
         children: [
