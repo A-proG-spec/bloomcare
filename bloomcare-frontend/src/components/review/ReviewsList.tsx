@@ -1,12 +1,19 @@
+// src/components/review/ReviewsList.tsx
 import React from 'react';
-import type { Review } from '../../api/types';
 import { ReviewCard } from './ReviewCard';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { Button } from '../common/Button';
-import { FaSort, FaStar } from 'react-icons/fa';
+import { FaStar, FaSort } from 'react-icons/fa';
+
+// ============================================
+// ✅ TYPES - No 'any' used
+// ============================================
+
+// ✅ Import the Review type from your API types
+import type { Review } from '../../api/types';
 
 interface ReviewsListProps {
-  reviews: Review[] | null | undefined;  // ✅ Allow null/undefined
+  reviews: Review[];  // ✅ Use Review[] instead of any[]
   isLoading?: boolean;
   sortBy?: 'newest' | 'oldest' | 'highest' | 'lowest';
   onSortChange?: (sort: 'newest' | 'oldest' | 'highest' | 'lowest') => void;
@@ -18,11 +25,28 @@ interface ReviewsListProps {
   page?: number;
   totalPages?: number;
   onPageChange?: (page: number) => void;
-  emptyMessage?: string;
 }
 
+// ✅ Type for sort option
+type SortOption = {
+  value: 'newest' | 'oldest' | 'highest' | 'lowest';
+  label: string;
+};
+
+// ✅ Sort options
+const SORT_OPTIONS: SortOption[] = [
+  { value: 'newest', label: 'Newest First' },
+  { value: 'oldest', label: 'Oldest First' },
+  { value: 'highest', label: 'Highest Rated' },
+  { value: 'lowest', label: 'Lowest Rated' },
+];
+
+// ============================================
+// ✅ Component
+// ============================================
+
 export const ReviewsList: React.FC<ReviewsListProps> = ({
-  reviews,
+  reviews = [],
   isLoading = false,
   sortBy = 'newest',
   onSortChange,
@@ -34,88 +58,94 @@ export const ReviewsList: React.FC<ReviewsListProps> = ({
   page = 1,
   totalPages = 1,
   onPageChange,
-  emptyMessage = 'No reviews yet. Be the first to review!',
 }) => {
-  // ✅ FIX: Always ensure reviews is an array
-  const safeReviews = Array.isArray(reviews) ? reviews : [];
-
+  // ✅ Loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
+      <div className="flex justify-center items-center py-12">
         <LoadingSpinner />
       </div>
     );
   }
 
-  if (safeReviews.length === 0) {
+  // ✅ No reviews
+  if (!reviews || reviews.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
-        <FaStar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500 font-outfit">{emptyMessage}</p>
+        <FaStar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-600 font-outfit">No Reviews Yet</h3>
+        <p className="text-gray-400 text-sm mt-1 font-outfit">
+          Be the first to review this pharmacy!
+        </p>
       </div>
     );
   }
 
+  // ✅ Handle sort change with proper typing
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value as 'newest' | 'oldest' | 'highest' | 'lowest';
+    onSortChange?.(value);
+  };
+
   return (
     <div className="space-y-4">
-      {/* Sort Options */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-sm font-medium text-gray-600 flex items-center gap-1 font-outfit">
-          <FaSort className="w-3 h-3" />
-          Sort by:
-        </span>
-        <div className="flex gap-2 flex-wrap">
-          {(['newest', 'oldest', 'highest', 'lowest'] as const).map((option) => (
-            <button
-              key={option}
-              onClick={() => onSortChange?.(option)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-xl transition-colors font-outfit ${
-                sortBy === option
-                  ? 'bg-[#22c55e] text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {option === 'newest' ? 'Newest' : 
-               option === 'oldest' ? 'Oldest' : 
-               option === 'highest' ? 'Highest' : 'Lowest'}
-            </button>
-          ))}
+      {/* Sort Controls */}
+      {onSortChange && (
+        <div className="flex items-center gap-2 justify-end">
+          <FaSort className="w-4 h-4 text-gray-400" />
+          <select
+            value={sortBy}
+            onChange={handleSortChange}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#22c55e] focus:border-transparent font-outfit bg-white"
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
-      </div>
+      )}
 
-      {/* Reviews Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {safeReviews.map((review) => (
-          <ReviewCard
-            key={review._id}
-            review={review}
-            onDelete={onDelete}
-            onUpdate={onUpdate}
-            canDelete={canDeleteAny || (canEditOwn && currentUserId === (review.user as { _id?: string })?._id)}
-            canEdit={canEditOwn}
-            currentUserId={currentUserId}
-          />
-        ))}
+      {/* Reviews */}
+      <div className="space-y-4">
+        {reviews.map((review) => {
+          // ✅ Safe user ID extraction
+          const user = review.user as { _id?: string; id?: string } | null | undefined;
+          const userId = user?._id || user?.id || null;
+          
+          return (
+            <ReviewCard
+              key={review._id}
+              review={review}
+              onDelete={onDelete}
+              onUpdate={onUpdate}
+              canDelete={canDeleteAny || (canEditOwn && userId === currentUserId)}
+              canEdit={canEditOwn && userId === currentUserId}
+              currentUserId={currentUserId}
+            />
+          );
+        })}
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {totalPages > 1 && onPageChange && (
         <div className="flex justify-center gap-2 mt-6">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onPageChange?.(page - 1)}
+            onClick={() => onPageChange(Math.max(1, page - 1))}
             disabled={page === 1}
           >
             Previous
           </Button>
-          <span className="px-4 py-2 text-sm font-medium text-gray-700 font-outfit">
+          <span className="flex items-center px-3 text-sm font-outfit">
             Page {page} of {totalPages}
           </span>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onPageChange?.(page + 1)}
+            onClick={() => onPageChange(Math.min(totalPages, page + 1))}
             disabled={page === totalPages}
           >
             Next

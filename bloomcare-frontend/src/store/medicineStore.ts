@@ -1,14 +1,37 @@
 import { create } from 'zustand';
-import type { Medicine } from '../api/types';
-import { medicineApi } from '../api/endpoints';
+import { medicineApi } from '../api/endpoints/medicine';
+
+interface ApiErrorResponse {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
+
+interface Medicine {
+  _id: string;
+  name: string;
+  genericName?: string;
+  category?: string;
+  manufacturer?: string;
+  description?: string;
+  image?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 interface MedicineState {
   medicines: Medicine[];
-  selectedMedicine: Medicine | null;
   isLoading: boolean;
+  error: string | null;
+  totalPages: number;
+  currentPage: number;
+  totalMedicines: number;
   categories: string[];
   manufacturers: string[];
   
+  // Actions
   fetchMedicines: (params?: {
     search?: string;
     category?: string;
@@ -16,60 +39,50 @@ interface MedicineState {
     page?: number;
     limit?: number;
   }) => Promise<void>;
-  
-  fetchMedicineById: (id: string) => Promise<void>;
   fetchCategories: () => Promise<void>;
   fetchManufacturers: () => Promise<void>;
-  searchMedicines: (q: string) => Promise<Medicine[]>;
-  setSelectedMedicine: (medicine: Medicine | null) => void;
+  searchMedicines: (query: string) => Promise<Medicine[]>;
+  reset: () => void;
+  clearError: () => void;
 }
 
+// ✅ FIX: Removed unused 'get' parameter
 export const useMedicineStore = create<MedicineState>((set) => ({
   medicines: [],
-  selectedMedicine: null,
   isLoading: false,
+  error: null,
+  totalPages: 1,
+  currentPage: 1,
+  totalMedicines: 0,
   categories: [],
   manufacturers: [],
 
-  fetchMedicines: async (params) => {
-    set({ isLoading: true });
+  fetchMedicines: async (params = {}) => {
+    set({ isLoading: true, error: null });
+    
     try {
       const response = await medicineApi.getMedicines(params);
-      let medicines: Medicine[] = [];
-      if (response?.data?.medicines) {
-        medicines = response.data.medicines;
-      } else if (response?.medicines) {
-        medicines = response.medicines;
-      } else if (Array.isArray(response?.data)) {
-        medicines = response.data;
-      } else if (Array.isArray(response)) {
-        medicines = response;
-      }
-      set({ medicines });
-    } catch (error) {
-      console.error('Failed to fetch medicines:', error);
-      set({ medicines: [] });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  fetchMedicineById: async (id) => {
-    set({ isLoading: true });
-    try {
-      const medicine = await medicineApi.getMedicineById(id);
-      set({ selectedMedicine: medicine });
-    } catch (error) {
-      console.error('Failed to fetch medicine:', error);
-    } finally {
-      set({ isLoading: false });
+      
+      set({
+        medicines: response.data.medicines || [],
+        totalPages: response.data.pagination?.pages || 1,
+        currentPage: response.data.pagination?.page || 1,
+        totalMedicines: response.data.pagination?.total || 0,
+        isLoading: false,
+      });
+    } catch (error: unknown) {
+      const err = error as ApiErrorResponse;
+      set({
+        error: err.response?.data?.message || 'Failed to fetch medicines',
+        isLoading: false,
+      });
     }
   },
 
   fetchCategories: async () => {
     try {
-      const categories = await medicineApi.getCategories();
-      set({ categories });
+      const response = await medicineApi.getCategories();
+      set({ categories: response.data || [] });
     } catch (error) {
       console.error('Failed to fetch categories:', error);
     }
@@ -77,21 +90,39 @@ export const useMedicineStore = create<MedicineState>((set) => ({
 
   fetchManufacturers: async () => {
     try {
-      const manufacturers = await medicineApi.getManufacturers();
-      set({ manufacturers });
+      const response = await medicineApi.getManufacturers();
+      set({ manufacturers: response.data || [] });
     } catch (error) {
       console.error('Failed to fetch manufacturers:', error);
     }
   },
 
-  searchMedicines: async (q) => {
+  searchMedicines: async (query: string) => {
+    if (!query || query.length < 2) {
+      return [];
+    }
+    
     try {
-      return await medicineApi.searchMedicines(q);
+      const response = await medicineApi.searchMedicines(query);
+      return response.data || [];
     } catch (error) {
       console.error('Failed to search medicines:', error);
       return [];
     }
   },
 
-  setSelectedMedicine: (medicine) => set({ selectedMedicine: medicine }),
+  reset: () => {
+    set({
+      medicines: [],
+      isLoading: false,
+      error: null,
+      totalPages: 1,
+      currentPage: 1,
+      totalMedicines: 0,
+    });
+  },
+
+  clearError: () => {
+    set({ error: null });
+  },
 }));

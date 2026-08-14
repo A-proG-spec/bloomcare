@@ -14,9 +14,9 @@ export const environment = {
   // Bcrypt
   BCRYPT_SALT_ROUNDS: parseInt(process.env.BCRYPT_SALT_ROUNDS || "10"),
 
-  // Resend
-  RESEND_API_KEY: process.env.RESEND_API_KEY || "",
-  EMAIL_FROM: process.env.EMAIL_FROM || "noreply@yourdomain.com",
+  // Gmail SMTP
+GMAIL_USER: process.env.GMAIL_USER || "",
+GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD || "",
 
   // Cloudinary
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || "",

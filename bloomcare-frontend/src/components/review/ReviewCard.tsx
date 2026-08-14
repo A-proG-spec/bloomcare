@@ -1,10 +1,16 @@
+// src/components/review/ReviewCard.tsx
 import React, { useState } from 'react';
 import type { Review } from '../../api/types';
 import { RatingStars } from './RatingStars';
 import { Modal } from '../common/Modal';
+import { SafeText } from '../common/SafeContent';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { FaUser, FaEdit, FaTrash } from 'react-icons/fa';
+
+// ============================================
+// ✅ TYPES - No 'any' used
+// ============================================
 
 interface ReviewCardProps {
   review: Review;
@@ -15,7 +21,6 @@ interface ReviewCardProps {
   currentUserId?: string;
 }
 
-// ✅ ADDED: Type for API error response
 interface ApiError {
   response?: {
     data?: {
@@ -23,6 +28,31 @@ interface ApiError {
     };
   };
 }
+
+// ✅ Define the User type that matches the Review.user structure
+interface ReviewUser {
+  _id?: string;
+  id?: string;
+  fullName?: string;
+  image?: string;
+  email?: string;
+}
+
+// ============================================
+// ✅ Type Guard to check if user is a ReviewUser
+// ============================================
+function isReviewUser(user: unknown): user is ReviewUser {
+  return (
+    typeof user === 'object' &&
+    user !== null &&
+    (('_id' in user && typeof (user as ReviewUser)._id === 'string') ||
+     ('id' in user && typeof (user as ReviewUser).id === 'string'))
+  );
+}
+
+// ============================================
+// ✅ Component
+// ============================================
 
 export const ReviewCard: React.FC<ReviewCardProps> = ({
   review,
@@ -37,8 +67,14 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   const [editComment, setEditComment] = useState(review.comment);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ✅ FIXED: Use type assertion to access _id
-  const isOwnReview = currentUserId === (review.user as { _id?: string })?._id;
+  // ✅ Safe user data extraction - No 'any' type
+  const userData = isReviewUser(review.user) ? review.user : null;
+  
+  const reviewUserId = userData?.id || userData?.id || null;
+  const isOwnReview = currentUserId && reviewUserId && currentUserId === reviewUserId;
+
+  const userDisplayName = userData?.fullName || 'Anonymous';
+  const userImage = userData?.image || null;
 
   const handleSubmitEdit = async () => {
     if (!editComment.trim()) {
@@ -55,7 +91,6 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       toast.success('Review updated successfully');
       setIsEditModalOpen(false);
     } catch (error: unknown) {
-      // ✅ FIXED: Properly typed error
       const err = error as ApiError;
       toast.error(err.response?.data?.message || 'Failed to update review');
     } finally {
@@ -69,6 +104,10 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
     }
   };
 
+  // ✅ Generate avatar URL without any type issues
+  const avatarUrl = userImage 
+    || `https://ui-avatars.com/api/?name=${encodeURIComponent(userDisplayName)}&background=22c55e&color=fff&size=40`;
+
   return (
     <>
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-lg hover:border-[#22c55e]/30 transition-all duration-200">
@@ -76,15 +115,15 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-start gap-3 flex-1">
             <img
-              src={review.user?.image || 'https://via.placeholder.com/40'}
-              alt={review.user?.fullName}
+              src={avatarUrl}
+              alt={userDisplayName}
               className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border-2 border-[#d1f843]"
             />
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h4 className="font-semibold text-black text-sm truncate flex items-center gap-1 font-outfit">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="font-semibold text-black text-sm flex items-center gap-1 font-outfit">
                   <FaUser className="w-3 h-3 text-[#22c55e]" />
-                  {review.user?.fullName}
+                  <SafeText text={userDisplayName} />
                 </h4>
                 {isOwnReview && (
                   <span className="text-xs bg-[#d1f843] text-black px-2 py-0.5 rounded-xl font-medium font-outfit">
@@ -100,7 +139,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
 
           {/* Action Menu */}
           {(canDelete || canEdit) && (
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-shrink-0">
               {canEdit && isOwnReview && (
                 <button
                   onClick={() => setIsEditModalOpen(true)}
@@ -128,11 +167,14 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           <RatingStars rating={review.rating} />
         </div>
 
-        {/* Comment */}
+        {/* Comment - Safe rendering */}
         <div className="mb-3">
-          <p className="text-gray-700 text-sm leading-relaxed break-words font-outfit">
-            {review.comment}
-          </p>
+          <SafeText 
+            text={review.comment} 
+            maxLength={500} 
+            className="text-gray-700 text-sm leading-relaxed break-words font-outfit" 
+            as="p" 
+          />
         </div>
 
         {/* Footer */}

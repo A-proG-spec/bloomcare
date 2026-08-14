@@ -1,3 +1,14 @@
+// src/api/types.ts
+
+export interface PharmacyApplication {
+  _id?: string;
+  status?: 'pending' | 'approved' | 'rejected' | string;
+  pharmacyName?: string;
+  submittedAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown; // ✅ Replaced 'any' with 'unknown'
+}
+
 export interface User {
   id: string;
   fullName: string;
@@ -6,6 +17,49 @@ export interface User {
   phone?: string;
   image?: string;
   isEmailVerified: boolean;
+  pharmacyApplication?: PharmacyApplication;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Pharmacy {
+  _id: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  phone: string;
+  email: string;
+  website?: string;
+  openingHours?: {
+    monday?: string;
+    tuesday?: string;
+    wednesday?: string;
+    thursday?: string;
+    friday?: string;
+    saturday?: string;
+    sunday?: string;
+  };
+  image: string;
+  isActive: boolean;
+  rating: number;
+  totalReviews: number;
+  owner: {
+    _id: string;
+    fullName: string;
+    email: string;
+  };
+  medicines: Array<{
+    medicine: {
+      _id: string;
+      name: string;
+      genericName: string;
+      category: string;
+    };
+    price: number;
+    quantity: number;
+    stockStatus: 'In Stock' | 'Low Stock' | 'Out of Stock';
+  }>;
 }
 
 export interface AuthResponse {
@@ -49,14 +103,13 @@ export interface Medicine {
 export interface Order {
   _id: string;
   user: User;
-  pharmacy: any;
+  pharmacy: Pharmacy | string; // ✅ Replaced 'any' with 'Pharmacy | string'
   totalPrice: number;
   status: 'Pending' | 'Confirmed' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
   items: OrderItem[];
   orderDate: string;
   createdAt: string;
   updatedAt: string;
-  // Payment fields
   paymentMethod?: 'cod' | 'online' | 'bank_transfer';
   paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded';
   paymentIntentId?: string;
@@ -65,7 +118,6 @@ export interface Order {
     paymentGateway?: string;
     paidAt?: string;
   };
-  // Delivery fields
   deliveryMethod?: 'pickup' | 'delivery';
   deliveryAddress?: {
     address: string;
@@ -89,7 +141,7 @@ export interface OrderItem {
 export interface Review {
   _id: string;
   user: User;
-  pharmacy: any;
+  pharmacy: Pharmacy | string; // ✅ Replaced 'any' with 'Pharmacy | string'
   rating: number;
   comment: string;
   createdAt: string;

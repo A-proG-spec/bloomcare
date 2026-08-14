@@ -1,3 +1,4 @@
+// src/api/endpoints/auth.ts
 import apiClient from '../client';
 import type { AuthResponse, User } from '../types';
 
@@ -16,11 +17,7 @@ export const authApi = {
     if (data.phone) formData.append('phone', data.phone);
     if (data.image) formData.append('image', data.image);
 
-    const response = await apiClient.post('/auth/register', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await apiClient.post('/auth/register', formData);
     return response.data;
   },
 
@@ -44,7 +41,6 @@ export const authApi = {
     return response.data;
   },
 
-  // ✅ Fixed: Accept refreshToken in body
   logout: async (refreshToken?: string): Promise<{ message: string }> => {
     const response = await apiClient.post('/auth/logout', { refreshToken });
     return response.data;
@@ -52,21 +48,27 @@ export const authApi = {
 
   getProfile: async (): Promise<{ user: User }> => {
     const response = await apiClient.get('/auth/profile');
-    return response.data;
+    return response.data.data;
   },
 
-  updateProfile: async (data: { fullName?: string; phone?: string; image?: File | null }): Promise<{ user: User }> => {
+  // ✅ FIX: Simplified - no manual Content-Type header
+  updateProfile: async (data: { 
+    fullName?: string; 
+    phone?: string; 
+    image?: File | null 
+  }): Promise<{ user: User }> => {
     const formData = new FormData();
     if (data.fullName) formData.append('fullName', data.fullName);
     if (data.phone) formData.append('phone', data.phone);
     if (data.image) formData.append('image', data.image);
 
-    const response = await apiClient.put('/auth/profile', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+    // ✅ Let Axios set Content-Type automatically
+    const response = await apiClient.put('/auth/profile', formData);
+    
+    // ✅ Backend returns: { success: true, message: "...", data: { user: {...} } }
+    return {
+      user: response.data.data.user
+    };
   },
 
   changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<{ message: string }> => {

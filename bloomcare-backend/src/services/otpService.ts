@@ -1,8 +1,8 @@
 import crypto from "crypto";
-import { resend } from "../config/email";
+import emailTransporter from "../config/email";
 import { environment } from "../config/enviroment";
-import { getOtpEmailTemplate } from "../templates/emailTemplates";
 import { logger } from "../config/logger";
+import { getOtpEmailTemplate } from "../templates/emailTemplates";
 
 class OTPService {
   generateOTP(): string {
@@ -24,9 +24,9 @@ class OTPService {
   async sendVerificationEmail(email: string, fullName: string, otp: string): Promise<void> {
     try {
       const html = getOtpEmailTemplate(otp, fullName);
-      
-      await resend.emails.send({
-        from: 'Bloomcare <onboarding@resend.dev>',
+
+      await emailTransporter.sendMail({
+        from: `"BloomCare" <${environment.GMAIL_USER}>`,
         to: email,
         subject: "Verify Your Email - BloomCare",
         html,

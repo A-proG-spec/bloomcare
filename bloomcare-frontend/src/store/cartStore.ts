@@ -1,149 +1,302 @@
+// src/store/cartStore.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { cartApi, CartItem } from '../api/endpoints/cart';
+import toast from 'react-hot-toast';
 
-export interface CartItem {
-  medicineId: string;
-  medicineName: string;
-  price: number;
-  quantity: number;
-  image?: string;
-  pharmacyId: string;
-  pharmacyName: string;
-  stockStatus: string;
-  maxQuantity: number;
+interface ApiErrorResponse {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
 }
+
+interface IdObject {
+  _id: string;
+}
+
+// Helper to safely extract string ID regardless of whether the field is populated or a plain string
+const getId = (idOrObj: unknown): string => {
+  if (idOrObj && typeof idOrObj === 'object' && '_id' in idOrObj) {
+    return (idOrObj as IdObject)._id;
+  }
+  return typeof idOrObj === 'string' ? idOrObj : '';
+};
 
 interface CartState {
   items: CartItem[];
-  
-  getItemQuantity: (medicineId: string) => number;
-  isInCart: (medicineId: string) => boolean;
-  getItemsByPharmacy: () => { [pharmacyId: string]: { pharmacyName: string; items: CartItem[] } };
-  getPharmacyIds: () => string[];
-  addItem: (item: CartItem) => boolean;
-  removeItem: (medicineId: string) => void;
-  updateQuantity: (medicineId: string, quantity: number) => void;
-  clearCart: () => void;
-  getTotalItems: () => number;
-  getTotalPrice: () => number;
+  totalItems: number;
+  totalPrice: number;
+  isLoading: boolean;
+  isSynced: boolean;
+
+  // Actions
+  fetchCart: () => Promise<void>;
+  addItem: (item: {
+    medicineId: string;
+    pharmacyId: string;
+    quantity: number;
+    price: number;
+    medicineName: string;
+    pharmacyName: string;
+    image?: string;
+    stockStatus?: string;
+  }) => Promise<boolean>;
+  updateQuantity: (medicineId: string, pharmacyId: string, quantity: number) => Promise<boolean>;
+  removeItem: (medicineId: string, pharmacyId: string) => Promise<boolean>;
+  clearCart: () => Promise<void>;
+  getItemCount: () => number;
   getCartCount: () => number;
-  getTotalPriceByPharmacy: (pharmacyId: string) => number;
-  
-  // ✅ Add method to clear cart with storage
-  clearCartAndStorage: () => void;
+  getTotalItems: () => number;
+  getItemQuantity: (medicineId: string, pharmacyId?: string) => number;
+  getTotalPrice: () => number;
+  getItemsByPharmacy: () => Record<string, { pharmacyName: string; items: CartItem[] }>;
+  mergeGuestCart: (guestItems: CartItem[]) => Promise<void>;
+  reset: () => void;
+  resetCart: () => void;
 }
+
+const GUEST_CART_KEY = 'guest-cart';
 
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      totalItems: 0,
+      totalPrice: 0,
+      isLoading: false,
+      isSynced: false,
 
-      getItemQuantity: (medicineId) => {
-        const item = get().items.find(i => i.medicineId === medicineId);
-        return item?.quantity || 0;
+      // ============================================================
+      // FETCH CART
+      // ============================================================
+
+      fetchCart: async () => {
+        set({ isLoading: true });
+        try {
+          const cart = await cartApi.getCart();
+          set({
+            items: cart.items || [],
+            totalItems: cart.totalItems || 0,
+            totalPrice: cart.totalPrice || 0,
+            isSynced: true,
+            isLoading: false,
+          });
+        } catch (error) {
+          console.error('Failed to fetch cart:', error);
+          set({ isLoading: false });
+        }
       },
 
-      isInCart: (medicineId) => {
-        return get().items.some(i => i.medicineId === medicineId);
+      // ============================================================
+      // ADD ITEM
+      // ============================================================
+
+      addItem: async (item) => {
+        set({ isLoading: true });
+        try {
+          const cart = await cartApi.addItem({
+            medicineId: item.medicineId,
+            pharmacyId: item.pharmacyId,
+            quantity: item.quantity,
+          });
+
+          set({
+            items: cart.items,
+            totalItems: cart.totalItems,
+            totalPrice: cart.totalPrice,
+            isLoading: false,
+          });
+
+          return true;
+        } catch (error: unknown) {
+          const err = error as ApiErrorResponse;
+          const message = err.response?.data?.message || 'Failed to add item to cart';
+          toast.error(message);
+          set({ isLoading: false });
+          return false;
+        }
       },
+
+      // ============================================================
+      // UPDATE QUANTITY
+      // ============================================================
+
+      updateQuantity: async (medicineId: string, pharmacyId: string, quantity: number) => {
+        set({ isLoading: true });
+        try {
+          const cart = await cartApi.updateItem(medicineId, pharmacyId, quantity);
+
+          set({
+            items: cart.items,
+            totalItems: cart.totalItems,
+            totalPrice: cart.totalPrice,
+            isLoading: false,
+          });
+
+          return true;
+        } catch (error: unknown) {
+          const err = error as ApiErrorResponse;
+          const message = err.response?.data?.message || 'Failed to update cart';
+          toast.error(message);
+          set({ isLoading: false });
+          return false;
+        }
+      },
+
+      // ============================================================
+      // REMOVE ITEM
+      // ============================================================
+
+      removeItem: async (medicineId: string, pharmacyId: string) => {
+        set({ isLoading: true });
+        try {
+          const cart = await cartApi.removeItem(medicineId, pharmacyId);
+
+          set({
+            items: cart.items,
+            totalItems: cart.totalItems,
+            totalPrice: cart.totalPrice,
+            isLoading: false,
+          });
+
+          return true;
+        } catch (error: unknown) {
+          const err = error as ApiErrorResponse;
+          const message = err.response?.data?.message || 'Failed to remove item';
+          toast.error(message);
+          set({ isLoading: false });
+          return false;
+        }
+      },
+
+      // ============================================================
+      // CLEAR CART
+      // ============================================================
+
+      clearCart: async () => {
+        set({ isLoading: true });
+        try {
+          await cartApi.clearCart();
+          set({
+            items: [],
+            totalItems: 0,
+            totalPrice: 0,
+            isLoading: false,
+          });
+        } catch (error) {
+          console.error('Failed to clear cart:', error);
+          set({ isLoading: false });
+        }
+      },
+
+      // ============================================================
+      // MERGE GUEST CART
+      // ============================================================
+
+      mergeGuestCart: async (guestItems: CartItem[]) => {
+        if (!guestItems || guestItems.length === 0) {
+          return;
+        }
+
+        set({ isLoading: true });
+
+        try {
+          const formattedItems = guestItems.map((item) => ({
+            medicineId: getId(item.medicineId),
+            pharmacyId: getId(item.pharmacyId),
+            quantity: item.quantity,
+          }));
+
+          const cart = await cartApi.mergeGuestCart(formattedItems);
+          set({
+            items: cart.items,
+            totalItems: cart.totalItems,
+            totalPrice: cart.totalPrice,
+            isLoading: false,
+            isSynced: true,
+          });
+
+          localStorage.removeItem(GUEST_CART_KEY);
+        } catch (error: unknown) {
+          console.error('Failed to merge guest cart:', error);
+          set({ isLoading: false });
+        }
+      },
+
+      // ============================================================
+      // GET ITEM QUANTITY (HELPER)
+      // ============================================================
+
+      getItemQuantity: (medicineId: string, pharmacyId?: string) => {
+        const items = get().items || [];
+        const item = items.find((i) => {
+          const medId = getId(i.medicineId);
+          const pharmId = getId(i.pharmacyId);
+
+          if (pharmacyId) {
+            return medId === medicineId && pharmId === pharmacyId;
+          }
+          return medId === medicineId;
+        });
+
+        return item ? item.quantity : 0;
+      },
+
+      // ============================================================
+      // GET ITEM COUNT & GET CART COUNT
+      // ============================================================
+
+      getItemCount: () => get().totalItems,
+      getCartCount: () => get().totalItems,
+      getTotalItems: () => get().totalItems,
+      getTotalPrice: () => get().totalPrice,
+
+      // ============================================================
+      // GET ITEMS BY PHARMACY
+      // ============================================================
 
       getItemsByPharmacy: () => {
-        const items = get().items;
-        const grouped: { [pharmacyId: string]: { pharmacyName: string; items: CartItem[] } } = {};
-        
-        items.forEach(item => {
-          if (!grouped[item.pharmacyId]) {
-            grouped[item.pharmacyId] = {
+        const items = get().items || [];
+        const grouped: Record<string, { pharmacyName: string; items: CartItem[] }> = {};
+
+        items.forEach((item) => {
+          const key = item.pharmacyId;
+          if (!grouped[key]) {
+            grouped[key] = {
               pharmacyName: item.pharmacyName,
               items: [],
             };
           }
-          grouped[item.pharmacyId].items.push(item);
+          grouped[key].items.push(item);
         });
-        
+
         return grouped;
       },
 
-      getPharmacyIds: () => {
-        const items = get().items;
-        const ids = new Set(items.map(item => item.pharmacyId));
-        return Array.from(ids);
-      },
+      // ============================================================
+      // RESET
+      // ============================================================
 
-      addItem: (item) => {
-        const { items } = get();
-        
-        const existing = items.find(i => i.medicineId === item.medicineId && i.pharmacyId === item.pharmacyId);
-        let updatedItems;
-        
-        if (existing) {
-          const newQty = Math.min(existing.quantity + item.quantity, item.maxQuantity || 999);
-          updatedItems = items.map(i =>
-            i.medicineId === item.medicineId && i.pharmacyId === item.pharmacyId
-              ? { ...i, quantity: newQty }
-              : i
-          );
-        } else {
-          updatedItems = [...items, { ...item, quantity: item.quantity || 1 }];
-        }
-        
-        set({ items: updatedItems });
-        return true;
+      reset: () => {
+        set({
+          items: [],
+          totalItems: 0,
+          totalPrice: 0,
+          isLoading: false,
+          isSynced: false,
+        });
       },
-
-      removeItem: (medicineId) => {
-        set((state) => ({
-          items: state.items.filter(i => i.medicineId !== medicineId),
-        }));
-      },
-
-      updateQuantity: (medicineId, quantity) => {
-        if (quantity <= 0) {
-          get().removeItem(medicineId);
-          return;
-        }
-        set((state) => ({
-          items: state.items.map(i =>
-            i.medicineId === medicineId
-              ? { ...i, quantity: Math.min(quantity, i.maxQuantity || 999) }
-              : i
-          ),
-        }));
-      },
-
-      clearCart: () => {
-        console.log('🛒 Clearing cart...');
-        set({ items: [] });
-      },
-
-      // ✅ Add this method to clear cart AND storage
-      clearCartAndStorage: () => {
-        console.log('🛒 Clearing cart and storage...');
-        set({ items: [] });
-        // ✅ Remove the persisted cart from localStorage
-        localStorage.removeItem('cart-storage');
-      },
-
-      getTotalItems: () => {
-        return get().items.reduce((sum, item) => sum + item.quantity, 0);
-      },
-
-      getTotalPrice: () => {
-        return get().items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      },
-
-      getCartCount: () => {
-        return get().items.reduce((count, item) => count + item.quantity, 0);
-      },
-
-      getTotalPriceByPharmacy: (pharmacyId) => {
-        return get().items
-          .filter(item => item.pharmacyId === pharmacyId)
-          .reduce((sum, item) => sum + item.price * item.quantity, 0);
-      },
+      resetCart: () => get().reset(),
     }),
     {
       name: 'cart-storage',
+      partialize: (state) => ({
+        items: state.items,
+        totalItems: state.totalItems,
+        totalPrice: state.totalPrice,
+      }),
     }
   )
 );

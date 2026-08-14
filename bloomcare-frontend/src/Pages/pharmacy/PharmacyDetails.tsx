@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+// src/Pages/pharmacy/PharmacyDetails.tsx
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
@@ -11,6 +12,7 @@ import { RatingStars } from '../../components/review/RatingStars';
 import { ReviewsList } from '../../components/review/ReviewsList';
 import { MedicineList } from '../../components/medicine/MedicineList';
 import { Modal } from '../../components/common/Modal';
+import { SafeText } from '../../components/common/SafeContent';
 import type { Pharmacy } from '../../types/pharmacy.types';
 import type { Review } from '../../api/types';
 import toast from 'react-hot-toast';
@@ -32,6 +34,45 @@ import {
   FaChevronUp
 } from 'react-icons/fa';
 
+// ============================================
+// ✅ TYPES
+// ============================================
+
+interface MedicineDetails {
+  price: number;
+  quantity: number;
+  stockStatus: 'In Stock' | 'Low Stock' | 'Out of Stock';
+}
+
+interface CartItem {
+  medicineId: string;
+  medicineName: string;
+  price: number;
+  quantity: number;
+  image?: string;
+  pharmacyId: string;
+  pharmacyName: string;
+  stockStatus: string;
+  maxQuantity: number;
+}
+
+// ✅ Define the base medicine type that comes from pharmacy.medicines
+// This matches what the backend returns
+interface MedicineListItem {
+  _id: string;
+  name: string;
+  genericName: string;
+  category: string;
+  manufacturer?: string;
+  image?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// ============================================
+// ✅ COMPONENT
+// ============================================
+
 export const PharmacyDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -49,58 +90,67 @@ export const PharmacyDetails: React.FC = () => {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
   const [reviewPage, setReviewPage] = useState(1);
   const [reviewTotalPages, setReviewTotalPages] = useState(1);
-  const [showFullDescription, setShowFullDescription] = useState(false);
+  const [showFullHours, setShowFullHours] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
-  useEffect(() => {
-    if (!id) return;
-    loadPharmacyData();
-  }, [id]);
+  // ============================================
+  // ✅ Data fetching
+  // ============================================
 
   useEffect(() => {
-    if (id) {
-      loadReviews();
-    }
-  }, [id, sortBy, reviewPage]);
+    const loadPharmacyData = async () => {
+      if (!id) return;
+      
+      setIsLoading(true);
+      try {
+        const data = await pharmacyApi.getPharmacyById(id);
+        setPharmacy(data);
 
-  const loadPharmacyData = async () => {
-    setIsLoading(true);
-    try {
-      const data = await pharmacyApi.getPharmacyById(id!);
-      setPharmacy(data);
-
-      if (isAuthenticated && user?.id) {
-        try {
-          const userRev = await reviewApi.getUserReviewForPharmacy(id!);
-          setUserReview(userRev);
-        } catch (error) {
-          setUserReview(null);
+        if (isAuthenticated && user?.id) {
+          try {
+            const userRev = await reviewApi.getUserReviewForPharmacy(id);
+            setUserReview(userRev);
+          } catch {
+            setUserReview(null);
+          }
         }
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { message?: string } } };
+        toast.error(err.response?.data?.message || 'Failed to load pharmacy');
+        navigate('/pharmacies');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to load pharmacy');
-      navigate('/pharmacies');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  const loadReviews = async () => {
-    if (!id) return;
-    try {
-      const response = await reviewApi.getPharmacyReviews(id, {
-        page: reviewPage,
-        limit: 6,
-        sortBy,
-      });
-      setReviews(response.data || []);
-      if (response.pagination) {
-        setReviewTotalPages(response.pagination.pages);
+    loadPharmacyData();
+  }, [id, isAuthenticated, user?.id, navigate]);
+
+  useEffect(() => {
+    const loadReviews = async () => {
+      if (!id) return;
+      
+      try {
+        const response = await reviewApi.getPharmacyReviews(id, {
+          page: reviewPage,
+          limit: 6,
+          sortBy,
+        });
+        setReviews(response.reviews || []);
+        if (response.pagination) {
+          setReviewTotalPages(response.pagination.pages || 1);
+        }
+      } catch (error: unknown) {
+        console.error('Failed to fetch reviews:', error);
       }
-    } catch (error: any) {
-      console.error('Failed to fetch reviews:', error);
-    }
-  };
+    };
+
+    loadReviews();
+  }, [id, reviewPage, sortBy]);
+
+  // ============================================
+  // ✅ Event handlers
+  // ============================================
 
   const handleSubmitReview = async () => {
     if (!isAuthenticated) {
@@ -135,10 +185,23 @@ export const PharmacyDetails: React.FC = () => {
       setReviewComment('');
       setReviewRating(5);
       setReviewPage(1);
-      await loadPharmacyData();
-      await loadReviews();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to submit review');
+      
+      // Reload data
+      const data = await pharmacyApi.getPharmacyById(id!);
+      setPharmacy(data);
+      
+      const response = await reviewApi.getPharmacyReviews(id!, {
+        page: 1,
+        limit: 6,
+        sortBy,
+      });
+      setReviews(response.reviews || []);
+      if (response.pagination) {
+        setReviewTotalPages(response.pagination.pages || 1);
+      }
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to submit review');
     } finally {
       setIsSubmittingReview(false);
     }
@@ -149,10 +212,22 @@ export const PharmacyDetails: React.FC = () => {
       await reviewApi.deleteReview(reviewId);
       toast.success('Review deleted successfully');
       setReviewPage(1);
-      await loadPharmacyData();
-      await loadReviews();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to delete review');
+      
+      const data = await pharmacyApi.getPharmacyById(id!);
+      setPharmacy(data);
+      
+      const response = await reviewApi.getPharmacyReviews(id!, {
+        page: 1,
+        limit: 6,
+        sortBy,
+      });
+      setReviews(response.reviews || []);
+      if (response.pagination) {
+        setReviewTotalPages(response.pagination.pages || 1);
+      }
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to delete review');
     }
   };
 
@@ -160,15 +235,24 @@ export const PharmacyDetails: React.FC = () => {
     reviewId: string,
     data: { rating: number; comment: string }
   ) => {
-    try {
-      await reviewApi.updateReview(reviewId, data);
-      await loadReviews();
-    } catch (error: any) {
-      throw error;
+    await reviewApi.updateReview(reviewId, data);
+    
+    const response = await reviewApi.getPharmacyReviews(id!, {
+      page: reviewPage,
+      limit: 6,
+      sortBy,
+    });
+    setReviews(response.reviews || []);
+    if (response.pagination) {
+      setReviewTotalPages(response.pagination.pages || 1);
     }
   };
 
-  const handleAddToCart = (medicine: any, pharmacyId?: string, pharmacyName?: string) => {
+  const handleAddToCart = (
+    medicine: { _id: string; name: string; image?: string },
+    pharmacyId?: string,
+    pharmacyName?: string
+  ) => {
     if (!isAuthenticated) {
       toast.error('Please login to add items to cart');
       navigate('/login');
@@ -196,7 +280,7 @@ export const PharmacyDetails: React.FC = () => {
       pharmacyName: pharmacyName || pharmacy.name,
       stockStatus: details.stockStatus,
       maxQuantity: details.quantity,
-    });
+    } as CartItem);
 
     if (success) {
       toast.success(`Added ${medicine.name} to cart`);
@@ -205,23 +289,39 @@ export const PharmacyDetails: React.FC = () => {
     }
   };
 
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    toast.success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
-  };
+  // ✅ Properly typed medicineDetails
+  const medicineDetails = pharmacy?.medicines?.reduce<Record<string, MedicineDetails>>(
+    (acc, med) => {
+      acc[med.medicine._id] = {
+        price: med.price,
+        quantity: med.quantity,
+        stockStatus: med.stockStatus,
+      };
+      return acc;
+    },
+    {}
+  ) || {};
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: pharmacy?.name,
-        text: `Check out ${pharmacy?.name} on BloomCare!`,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard!');
-    }
-  };
+  const hasOpeningHours =
+    pharmacy?.openingHours &&
+    Object.values(pharmacy.openingHours).some((val) => val && val.trim() !== '');
+
+  // ✅ FIX: Create medicines array with proper types - NO 'any'
+  const medicinesForList: MedicineListItem[] = pharmacy?.medicines?.map((item) => ({
+    _id: item.medicine._id,
+    name: item.medicine.name,
+    genericName: item.medicine.genericName || '',
+    category: item.medicine.category || '',
+    // These fields may not exist on the medicine object, so we provide defaults
+    manufacturer: (item.medicine as { manufacturer?: string }).manufacturer || '',
+    image: (item.medicine as { image?: string }).image || '',
+    createdAt: (item.medicine as { createdAt?: string }).createdAt || new Date().toISOString(),
+    updatedAt: (item.medicine as { updatedAt?: string }).updatedAt || new Date().toISOString(),
+  })) || [];
+
+  // ============================================
+  // ✅ Loading state
+  // ============================================
 
   if (isLoading) {
     return (
@@ -244,22 +344,13 @@ export const PharmacyDetails: React.FC = () => {
     );
   }
 
-  const medicineDetails = pharmacy.medicines?.reduce((acc, med) => {
-    acc[med.medicine._id] = {
-      price: med.price,
-      quantity: med.quantity,
-      stockStatus: med.stockStatus,
-    };
-    return acc;
-  }, {} as any) || {};
-
-  const hasOpeningHours =
-    pharmacy.openingHours &&
-    Object.values(pharmacy.openingHours).some((val) => val && val.trim() !== '');
+  // ============================================
+  // ✅ Render
+  // ============================================
 
   return (
     <div className="max-w-4xl mx-auto pb-20 md:pb-8">
-      {/* ✅ Fixed Back Button - Mobile Optimized */}
+      {/* Back Button */}
       <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-4 py-3 border-b border-gray-200 flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
@@ -270,13 +361,27 @@ export const PharmacyDetails: React.FC = () => {
         </button>
         <div className="flex items-center gap-2">
           <button
-            onClick={handleShare}
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({
+                  title: pharmacy.name,
+                  text: `Check out ${pharmacy.name} on BloomCare!`,
+                  url: window.location.href,
+                });
+              } else {
+                navigator.clipboard.writeText(window.location.href);
+                toast.success('Link copied to clipboard!');
+              }
+            }}
             className="p-2 text-gray-400 hover:text-[#22c55e] transition-colors"
           >
             <FaShare className="w-5 h-5" />
           </button>
           <button
-            onClick={toggleFavorite}
+            onClick={() => {
+              setIsFavorite(!isFavorite);
+              toast.success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
+            }}
             className="p-2 text-gray-400 hover:text-red-500 transition-colors"
           >
             {isFavorite ? (
@@ -288,9 +393,8 @@ export const PharmacyDetails: React.FC = () => {
         </div>
       </div>
 
-      {/* ✅ Pharmacy Header - Mobile Optimized */}
+      {/* Pharmacy Header */}
       <div className="px-4 pt-4 pb-2">
-        {/* ✅ Image with overlay */}
         <div className="relative rounded-2xl overflow-hidden bg-gray-100">
           <img
             src={pharmacy.image || 'https://via.placeholder.com/400x200?text=Pharmacy'}
@@ -311,17 +415,16 @@ export const PharmacyDetails: React.FC = () => {
           </div>
         </div>
 
-        {/* ✅ Pharmacy Info */}
         <div className="mt-4">
           <h1 className="text-2xl font-bold text-black flex items-center gap-2">
             <FaStore className="w-5 h-5 text-[#22c55e]" />
-            {pharmacy.name}
+            <SafeText text={pharmacy.name} />
           </h1>
           
           <div className="mt-2 space-y-2">
             <p className="text-sm text-gray-600 flex items-start gap-2">
               <FaMapMarkerAlt className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-              <span>{pharmacy.address}</span>
+              <SafeText text={pharmacy.address} />
             </p>
             <p className="text-sm text-gray-600 flex items-center gap-2">
               <FaPhone className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -344,7 +447,7 @@ export const PharmacyDetails: React.FC = () => {
             )}
           </div>
 
-          {/* ✅ Opening Hours - Collapsible on Mobile */}
+          {/* Opening Hours */}
           {hasOpeningHours && (
             <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
               <div className="flex items-center justify-between">
@@ -353,11 +456,11 @@ export const PharmacyDetails: React.FC = () => {
                   Opening Hours
                 </span>
                 <button
-                  onClick={() => setShowFullDescription(!showFullDescription)}
+                  onClick={() => setShowFullHours(!showFullHours)}
                   className="text-xs text-[#22c55e] flex items-center gap-1"
                 >
-                  {showFullDescription ? 'Hide' : 'Show all'}
-                  {showFullDescription ? (
+                  {showFullHours ? 'Hide' : 'Show all'}
+                  {showFullHours ? (
                     <FaChevronUp className="w-3 h-3" />
                   ) : (
                     <FaChevronDown className="w-3 h-3" />
@@ -365,7 +468,7 @@ export const PharmacyDetails: React.FC = () => {
                 </button>
               </div>
               <div className={`mt-2 space-y-1 transition-all duration-300 ${
-                showFullDescription ? 'max-h-96' : 'max-h-12 overflow-hidden'
+                showFullHours ? 'max-h-96' : 'max-h-12 overflow-hidden'
               }`}>
                 {pharmacy.openingHours &&
                   Object.entries(pharmacy.openingHours).map(([day, hours]) => {
@@ -383,7 +486,7 @@ export const PharmacyDetails: React.FC = () => {
         </div>
       </div>
 
-      {/* ✅ Medicines Section */}
+      {/* Medicines Section */}
       <div className="px-4 mt-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-black flex items-center gap-2">
@@ -397,7 +500,7 @@ export const PharmacyDetails: React.FC = () => {
         
         {pharmacy.medicines && pharmacy.medicines.length > 0 ? (
           <MedicineList
-            medicines={pharmacy.medicines.map((m) => m.medicine)}
+            medicines={medicinesForList as any}
             showPrice={true}
             showAddButton={true}
             onAddToCart={handleAddToCart}
@@ -413,7 +516,7 @@ export const PharmacyDetails: React.FC = () => {
         )}
       </div>
 
-      {/* ✅ Reviews Section */}
+      {/* Reviews Section */}
       <div className="px-4 mt-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
           <div>
@@ -454,7 +557,7 @@ export const PharmacyDetails: React.FC = () => {
         />
       </div>
 
-      {/* ✅ Review Modal - Mobile Optimized */}
+      {/* Review Modal */}
       <Modal
         isOpen={isReviewModalOpen}
         title={userReview ? 'Edit Your Review' : 'Leave a Review'}
@@ -512,7 +615,7 @@ export const PharmacyDetails: React.FC = () => {
         </div>
       </Modal>
 
-      {/* ✅ Bottom Action Bar - Mobile Fixed */}
+      {/* Bottom Action Bar - Mobile */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg md:hidden">
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -523,9 +626,9 @@ export const PharmacyDetails: React.FC = () => {
           </div>
           <Button
             onClick={() => {
-              const medicinesSection = document.querySelector('[class*="Available Medicines"]');
-              if (medicinesSection) {
-                medicinesSection.scrollIntoView({ behavior: 'smooth' });
+              const section = document.querySelector('[class*="Available Medicines"]');
+              if (section) {
+                section.scrollIntoView({ behavior: 'smooth' });
               }
             }}
             className="flex-1"

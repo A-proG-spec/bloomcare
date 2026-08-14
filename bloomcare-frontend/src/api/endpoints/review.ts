@@ -10,7 +10,6 @@ export const reviewApi = {
     return response.data.data;
   },
 
-  // ✅ FIXED: Handle different response formats
   getPharmacyReviews: async (pharmacyId: string, params?: {
     page?: number;
     limit?: number;
@@ -18,48 +17,53 @@ export const reviewApi = {
   }) => {
     const response = await apiClient.get(`/reviews/pharmacy/${pharmacyId}`, { params });
     
-    // ✅ Log the actual response to help debug
-    console.log('Reviews API response:', response.data);
     
-    // ✅ Handle both response formats
     const result = response.data;
     
-    // Case 1: { success: true, data: { reviews: [], pagination: {} } }
+    // Handle: { success: true, data: { reviews: [], pagination: {} } }
+    if (result?.success && result?.data?.reviews) {
+      return {
+        reviews: result.data.reviews || [],
+        pagination: result.data.pagination || { page: 1, limit: 10, total: 0, pages: 0 }
+      };
+    }
+    
+    // Handle: { data: { reviews: [], pagination: {} } }
     if (result?.data?.reviews) {
       return {
         reviews: result.data.reviews || [],
-        pagination: result.data.pagination || { page: 1, limit: 10, total: 0, pages: 0 },
+        pagination: result.data.pagination || { page: 1, limit: 10, total: 0, pages: 0 }
       };
     }
     
-    // Case 2: { success: true, data: [] }
-    if (Array.isArray(result?.data)) {
-      return {
-        reviews: result.data || [],
-        pagination: { page: 1, limit: 10, total: result.data.length, pages: 1 },
-      };
-    }
-    
-    // Case 3: { reviews: [], pagination: {} }
+    // Handle: { reviews: [], pagination: {} }
     if (result?.reviews) {
       return {
         reviews: result.reviews || [],
-        pagination: result.pagination || { page: 1, limit: 10, total: 0, pages: 0 },
+        pagination: result.pagination || { page: 1, limit: 10, total: 0, pages: 0 }
       };
     }
     
-    // Case 4: Fallback - return whatever we got but ensure it's an array
+    // Handle: { data: [] }
+    if (Array.isArray(result?.data)) {
+      return {
+        reviews: result.data || [],
+        pagination: { page: 1, limit: 10, total: result.data.length, pages: 1 }
+      };
+    }
+    
+    // Handle: [] (direct array)
     if (Array.isArray(result)) {
       return {
         reviews: result || [],
-        pagination: { page: 1, limit: 10, total: result.length, pages: 1 },
+        pagination: { page: 1, limit: 10, total: result.length, pages: 1 }
       };
     }
     
     // Default fallback
     return {
       reviews: [],
-      pagination: { page: 1, limit: 10, total: 0, pages: 0 },
+      pagination: { page: 1, limit: 10, total: 0, pages: 0 }
     };
   },
 

@@ -11,6 +11,8 @@ import notificationRoutes from "./routes/notificationRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import paymentRoutes from "./routes/PaymentRoute";
 import aiRoutes from "./routes/aiRoutes"
+import cartRoutes from "./routes/cartRoutes";
+
 
 const app = express();
 
@@ -37,6 +39,8 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/cart", cartRoutes);
+
 
 // Health check
 app.get("/health", (req: Request, res: Response) => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Pharmacy } from '../../types/pharmacy.types';
-import { FaStar, FaStore, FaMapMarkerAlt, FaClock, FaPhone, FaChevronRight } from 'react-icons/fa';
+import { FaStar, FaStore, FaMapMarkerAlt, FaPhone, FaChevronRight } from 'react-icons/fa';
 
 interface PharmacyCardProps {
   pharmacy: Pharmacy;

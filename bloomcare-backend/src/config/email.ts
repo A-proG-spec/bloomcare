@@ -1,9 +1,14 @@
-import { Resend } from 'resend';
-import { environment } from './enviroment';
-import { logger } from './logger';
+import nodemailer from "nodemailer";
+import { environment } from "./enviroment";
 
-const resend = new Resend(environment.RESEND_API_KEY);
+const emailTransporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: environment.GMAIL_USER,
+    pass: environment.GMAIL_APP_PASSWORD,
+  },
+});
 
-logger.info('Resend email client ready');
-
-export { resend };
+export default emailTransporter;

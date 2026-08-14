@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import User from "../models/User";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -193,7 +194,6 @@ class AuthController {
     }
   }
 
-  // ✅ FIX: Logout accepts refreshToken from body
   async logout(req: Request, res: Response) {
     try {
       const { refreshToken } = req.body;
@@ -302,60 +302,76 @@ class AuthController {
     }
   }
 
-  async changePassword(req: AuthRequest, res: Response) {
-    try {
-      const user = req.user;
-      // ✅ FIX: Cast to Request to access body
-      const { currentPassword, newPassword } = (req as Request).body;
+ async changePassword(req: AuthRequest, res: Response) {
+  try {
+    const user = req.user;
 
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: "User not found",
-        });
-      }
-
-      const validatedData = changePasswordValidation.parse({ currentPassword, newPassword });
-
-      const isPasswordValid = await bcrypt.compare(
-        validatedData.currentPassword,
-        user.password
-      );
-
-      if (!isPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          message: "Current password is incorrect",
-        });
-      }
-
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(validatedData.newPassword, salt);
-      user.password = hashedPassword;
-      await user.save();
-
-      return res.status(200).json({
-        success: true,
-        message: "Password changed successfully",
-      });
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          success: false,
-          errors: error.issues.map((err: z.ZodIssue) => ({
-            field: err.path.join('.'),
-            message: err.message,
-          })),
-        });
-      }
-
-      return res.status(500).json({
+    if (!user) {
+      return res.status(404).json({
         success: false,
-        message: "Failed to change password",
-        error: error.message,
+        message: "User not found",
       });
     }
+
+    const validatedData = changePasswordValidation.parse(req.body);
+
+    // Fetch the user with the password included
+    const userWithPassword = await User.findById(user._id).select("+password");
+
+    if (!userWithPassword) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      validatedData.currentPassword,
+      userWithPassword.password
+    );
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(environment.BCRYPT_SALT_ROUNDS);
+
+    const hashedPassword = await bcrypt.hash(
+      validatedData.newPassword,
+      salt
+    );
+
+    userWithPassword.password = hashedPassword;
+
+    await userWithPassword.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        errors: error.issues.map((err: z.ZodIssue) => ({
+          field: err.path.join("."),
+          message: err.message,
+        })),
+      });
+    }
+
+    logger.error("Change password error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to change password",
+      error: error.message,
+    });
   }
+}
 }
 
 export default new AuthController();

@@ -1,3 +1,4 @@
+// src/routes/index.tsx
 import { createBrowserRouter } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
@@ -13,7 +14,7 @@ import { Medicines } from '../Pages/medicine/Medicines';
 import { Orders } from '../Pages/order/Orders';
 import { OrderDetails } from '../Pages/order/OrderDetails';
 import { Profile } from '../Pages/profile/Profile';
-import { ChangePassword } from '../Pages/profile/ChangePassword';
+import { ChangePassword } from '../Pages/profile/ChangePassword'; // ✅ Already imported
 import { ApplyPharmacy } from '../Pages/pharmacy/ApplyPharmacy';
 import { Cart } from '../Pages/cart/Cart';
 import { Checkout } from '../Pages/cart/Checkout';
@@ -30,7 +31,9 @@ import { AdminOrders } from '../Pages/admin/AdminOrders';
 import { AdminAnalytics } from '../Pages/admin/Analytics';
 import { PharmacyInventory } from '../Pages/pharmacy/PharmacyInventory';
 
+// ✅ Import ProtectedRoute
 import { PrivateRoute } from './PrivateRoute';
+import { Unauthorized } from '../Pages/Unauthorized';
 
 export const router = createBrowserRouter([
   {
@@ -51,32 +54,44 @@ export const router = createBrowserRouter([
       { path: 'medicines', element: <Medicines /> },
       { path: 'medicines/:id', element: <MedicineDetails /> },
       { path: 'cart', element: <Cart /> },
-      { path: 'checkout', element: <Checkout /> },
+      { path: 'unauthorized', element: <Unauthorized /> },
 
-      // ✅ PROTECTED ROUTES
+      // ✅ USER ROUTES (Any authenticated user)
       {
         element: <PrivateRoute />,
         children: [
           { path: 'profile', element: <Profile /> },
-          { path: 'profile/change-password', element: <ChangePassword /> },
+          { path: 'profile/change-password', element: <ChangePassword /> }, // ✅ FIX: Nested under profile
+          { path: 'change-password', element: <ChangePassword /> }, // ✅ FIX: Also add as standalone route
+          { path: 'checkout', element: <Checkout /> },
           { path: 'orders', element: <Orders /> },
           { path: 'orders/:id', element: <OrderDetails /> },
+        ],
+      },
+
+      // ✅ USER/PHARMACY OWNER ROUTES
+      {
+        element: <PrivateRoute requiredRoles={['user', 'pharmacy_owner']} />,
+        children: [
           { path: 'apply-pharmacy', element: <ApplyPharmacy /> },
           { path: 'my-application', element: <MyApplication /> },
+        ],
+      },
+
+      // ✅ PHARMACY OWNER ROUTES
+      {
+        element: <PrivateRoute requiredRoles={['pharmacy_owner', 'admin']} />,
+        children: [
           { path: 'my-pharmacy', element: <MyPharmacy /> },
           { path: 'edit-pharmacy', element: <EditPharmacy /> },
-          
-          // ✅ Inventory Route - Use this URL
           { path: 'pharmacy-inventory', element: <PharmacyInventory /> },
-          
-          // ✅ Optional: Add alias for convenience
           { path: 'inventory', element: <PharmacyInventory /> },
         ],
       },
 
       // ✅ ADMIN ROUTES
       {
-        element: <PrivateRoute />,
+        element: <PrivateRoute requiredRoles={['admin']} fallbackPath="/unauthorized" />,
         children: [
           {
             path: 'admin',

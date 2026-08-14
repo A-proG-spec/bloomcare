@@ -95,3 +95,55 @@ export const authorize = (...roles: string[]) => {
     next();
   };
 };
+
+// ============================================================
+// ✅ NEW: Optional Authentication for Cart Routes
+// ============================================================
+
+export const optionalAuthenticate = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authHeader = req.headers.authorization as string;
+
+    // No token = guest user - just continue
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return next();
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    // Verify token
+    const decoded = jwt.verify(
+      token,
+      environment.JWT_ACCESS_SECRET
+    ) as any;
+
+    const user = await User.findById(decoded.userId).select(
+      "-password -refreshToken -otp -otpExpires"
+    );
+
+    // Invalid user/token → treat as guest
+    if (!user) {
+      return next();
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Please verify your email before accessing this resource.",
+        requiresVerification: true,
+      });
+    }
+
+    req.user = user;
+    next();
+  } catch (error: any) {
+    // Expired/invalid token → don't crash guest cart
+    // Just treat as guest
+    return next();
+  }
+};
